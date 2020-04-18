@@ -1,0 +1,12 @@
+name: Clans
+version: ${project.version}
+main: me.ag.clans.Clans
+api-version: '1.13'
+load: STARTUP
+authors: [Abdera7mane]
+description: Create clans and have epic battles !
+
+commands:
+  clan:
+    description: The main Clans commands
+    usage: /clan
