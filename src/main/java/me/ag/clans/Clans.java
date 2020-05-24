@@ -1,8 +1,11 @@
 package me.ag.clans;
 
+import java.io.File;
+import java.text.ParseException;
 import java.util.Map;
 import java.util.HashMap;
 
+import me.ag.clans.clanconfig.ClanConfigLoader;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -38,11 +41,16 @@ public class Clans extends JavaPlugin {
     }
 
     @Nullable
-    public Clan getClan() {
-        return null;
+    public Clan getClan(String name) throws ParseException {
+        return loadedClans.containsKey(name) ? loadedClans.get(name) : ClanConfigLoader.load(this.getDataFolder().getPath() + name + ".yml");
+    }
+
+    public boolean clanExists(String name) {
+        return new File(this.getDataFolder().getPath() + name + ".yml").exists();
     }
 
     public boolean createClan(String name, OfflinePlayer leader) {
+        if (clanExists(name)) return false;
         Clan clan = new Clan(name, leader);
         clan.save();
         loadedClans.put(name, clan);

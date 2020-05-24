@@ -1,0 +1,7 @@
+clan:
+  max-clan-name-length: 10
+  min-clan-name-length: 3
+  banned-clan-names:
+    - hafid
+    - lord_nabil
+    - walid

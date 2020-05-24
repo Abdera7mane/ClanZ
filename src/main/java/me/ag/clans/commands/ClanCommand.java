@@ -17,13 +17,17 @@ public class ClanCommand implements CommandExecutor {
 
         plugin.getServer().getConsoleSender().sendMessage("CLAANS");
         if (args[0].equalsIgnoreCase("create")) {
-            if (args.length < 2 ) {
+            if (args.length < 2) {
                 sender.sendMessage("§echoose a name for the clan");
                 return false;
             }
             System.out.println("creating ...");
-            boolean success = plugin.createClan(args[1], (Player) sender);
-            System.out.println(success);
+            if (!plugin.clanExists(args[1])) {
+                boolean success = plugin.createClan(args[1], (Player) sender);
+               System.out.println(success);
+               return true;
+            }
+            sender.sendMessage("This clan name is already taken");
         }
 
         else if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
