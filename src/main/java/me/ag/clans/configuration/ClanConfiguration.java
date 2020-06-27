@@ -5,5 +5,8 @@ import me.ag.clans.types.Clan;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public class ClanConfiguration extends YamlConfiguration {
-
+    public static ClanConfiguration loadConfiguration() {
+        this.
+        return new ClanConfiguration();
+    }
 }

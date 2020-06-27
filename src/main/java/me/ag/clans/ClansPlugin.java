@@ -5,7 +5,7 @@ import java.text.ParseException;
 import java.util.Map;
 import java.util.HashMap;
 
-import me.ag.clans.clanconfig.ClanConfigLoader;
+import me.ag.clans.configuration.ClanConfigLoader;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -15,12 +15,13 @@ import me.ag.clans.types.Clan;
 import javax.annotation.Nullable;
 
 
-public class Clans extends JavaPlugin {
-
+public class ClansPlugin extends JavaPlugin {
+    private static ClansPlugin instance;
     private Map<String, Clan> loadedClans = new HashMap<>();
 
     @Override
     public void onEnable() {
+        instance = this;
         loadConfig();
         Mechanics event = new Mechanics();
         this.getServer().getPluginManager().registerEvents(event, this);
@@ -30,6 +31,10 @@ public class Clans extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    public static ClansPlugin getInstance() {
+        return instance;
     }
 
     public boolean loadConfig() {
@@ -60,5 +65,16 @@ public class Clans extends JavaPlugin {
 
     public Clan[] getLoadedClans() {
         return loadedClans.values().toArray(new Clan[loadedClans.size()]);
+    }
+
+    public void loadClan(Clan clan) {
+        this.loadedClans.put(clan.getName(), clan);
+    }
+    public void unloadAll() {
+        this.loadedClans.clear();
+    }
+
+    public void unloadClan(String clan) {
+        loadedClans.remove(clan);
     }
 }
