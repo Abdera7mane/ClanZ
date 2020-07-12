@@ -1,7 +1,0 @@
-name: Clans
-version: 1.0
-main: me.ag.clans.ClansPlugin
-api-version: '1.13'
-author: Abdera7mane
-description: Create clans and have epic battles !
-softdepend: [Vault]

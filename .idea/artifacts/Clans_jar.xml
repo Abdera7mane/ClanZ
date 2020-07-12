@@ -1,9 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="Clans:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/Clans_jar</output-path>
-    <root id="archive" name="Clans.jar">
-      <element id="module-output" name="Clans" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/bstats/bstats-bukkit/1.7/bstats-bukkit-1.7.jar" path-in-jar="/" />
-    </root>
-  </artifact>
-</component>
