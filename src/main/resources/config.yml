@@ -1,7 +1,20 @@
 clan:
-  max-clan-name-length: 10
-  min-clan-name-length: 3
-  banned-clan-names:
-    - hafid
-    - lord_nabil
-    - walid
+  max-name-length: 10
+  min-name-length: 3
+  banned-names: []
+
+  roles:
+    recruit: recruit
+    member: member
+    junior_member: Junior member
+    senior_member: Senior member
+    squad_leader: Squad leader
+    vice_capitan: Vice capitan
+    capitan: Capitan
+    co_leader: Co-leader
+    leader: Leader
+
+economy:
+  create-cost: 0
+
+debug: false

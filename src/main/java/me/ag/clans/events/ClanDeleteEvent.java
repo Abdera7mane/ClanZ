@@ -5,12 +5,12 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-public class ClanCreateEvent extends Event implements Cancellable {
+public class ClanDeleteEvent extends Event implements Cancellable {
     private Clan clan;
     private boolean isCancelled;
     private static final HandlerList handlers = new HandlerList();
 
-    public ClanCreateEvent(Clan clan) {
+    public ClanDeleteEvent(Clan clan) {
         this.clan = clan;
     }
 
@@ -25,7 +25,7 @@ public class ClanCreateEvent extends Event implements Cancellable {
 
     @Override
     public void setCancelled(boolean cancel) {
-        this.isCancelled = cancel;
+        isCancelled = cancel;
     }
 
     public static HandlerList getHandlerList() {

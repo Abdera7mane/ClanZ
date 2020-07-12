@@ -1,7 +1,6 @@
 package me.ag.clans.types;
 
-import me.ag.clans.Clans;
-import org.bukkit.plugin.Plugin;
+import me.ag.clans.ClansPlugin;
 
 public enum ClanRole {
     RECRUIT(0),
@@ -9,12 +8,12 @@ public enum ClanRole {
     JUNIOR_MEMBER(2),
     SENIOR_MEMBER(3),
     SQUAD_LEADER(4),
-    VICE_CAPITAIN(5),
-    CAPITAIN(6),
+    VICE_CAPTAIN(5),
+    CAPTAIN(6),
     CO_LEADER(7),
     LEADER(8);
 
-    private Plugin plugin = Clans.getPlugin(Clans.class);
+    private static final ClansPlugin plugin = ClansPlugin.getInstance();
 
     public final int priority;
 
@@ -23,7 +22,7 @@ public enum ClanRole {
     }
 
     public String getDisplayName() {
-        return plugin.getConfig().getString(String.format("roles.%s.name", this.toString().toLowerCase()));
+        return plugin.getConfig().getString(String.format("clan.roles.%s.name", this.toString().toLowerCase()));
     }
 
 }

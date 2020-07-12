@@ -1,80 +1,151 @@
 package me.ag.clans;
 
 import java.io.File;
-import java.text.ParseException;
-import java.util.Map;
-import java.util.HashMap;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.logging.Logger;
 
-import me.ag.clans.configuration.ClanConfigLoader;
+import me.ag.clans.configuration.PlayerConfiguration;
+import net.milkbowl.vault.economy.Economy;
+
+//import org.bstats.bukkit.Metrics;
+
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import me.ag.clans.commands.ClanCommand;
 import me.ag.clans.types.Clan;
-
-import javax.annotation.Nullable;
-
+import me.ag.clans.listener.PlayerJoinListener;
 
 public class ClansPlugin extends JavaPlugin {
     private static ClansPlugin instance;
-    private Map<String, Clan> loadedClans = new HashMap<>();
+    private static Economy econ;
+    private static MemoryCache<String, Clan> clansCache = new Cache<>(60000);
+    private static MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60000);
+    private static PluginManager pluginManager;
+    private static Logger logger;
 
     @Override
     public void onEnable() {
         instance = this;
+        logger = getLogger();
+        pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(new PlayerJoinListener(), this);
+
+        log("loading configuration");
         loadConfig();
-        Mechanics event = new Mechanics();
-        this.getServer().getPluginManager().registerEvents(event, this);
-        this.getCommand("clan").setExecutor(new ClanCommand());
+        saveResource("messages.yml", false);
+
+        registerCommand(this.getDescription().getName(), new ClanCommand());
+
+        if (!setupEconomy() ) {
+            log("Vault not found! some functions are disabled");
+        }
+        //Metrics metrics = new Metrics(this, 516231);
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        int size = clansCache.size();
+        for (Clan clan : clansCache.values()) {
+            clan.save();
+        }
+        log(size + " §aClans have been saved");
+        clearClansCache();
     }
 
     public static ClansPlugin getInstance() {
         return instance;
     }
 
-    public boolean loadConfig() {
+    private void registerCommand(String fallback, Command command) {
+        try {
+            Field bukkitCommandMap = getServer().getClass().getDeclaredField("commandMap");
+            bukkitCommandMap.setAccessible(true);
+            CommandMap commandMap = (CommandMap) bukkitCommandMap.get(getServer());
+            commandMap.register(fallback, command);
+        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        econ = rsp.getProvider();
+        return econ != null;
+    }
+
+    public PluginManager getPluginManager() {
+        return pluginManager;
+    }
+
+    public static Economy getEconomy() {
+        return econ;
+    }
+
+    public void loadConfig() {
         getConfig().options().copyDefaults(true);
         saveConfig();
-        this.getServer().getConsoleSender().sendMessage("§2Config loaded");
-        this.getServer().getConsoleSender().sendMessage("ok " + Integer.toString((int) getConfig().get("max-name-length")));
-        return true;
     }
 
-    @Nullable
-    public Clan getClan(String name) throws ParseException {
-        return loadedClans.containsKey(name) ? loadedClans.get(name) : ClanConfigLoader.load(this.getDataFolder().getPath() + name + ".yml");
+    public static Clan getClanCache(String name) {
+        return clansCache.get(name);
     }
 
-    public boolean clanExists(String name) {
-        return new File(this.getDataFolder().getPath() + name + ".yml").exists();
+    public static void cacheClan(Clan clan) {
+        cacheClan(clan, true);
     }
 
-    public boolean createClan(String name, OfflinePlayer leader) {
-        if (clanExists(name)) return false;
-        Clan clan = new Clan(name, leader);
-        clan.save();
-        loadedClans.put(name, clan);
-        leader.getPlayer().sendMessage("§ayou have created a new clan named §7" + name + "§a !");
-        return true;
+    public static void cacheClan(Clan clan, boolean expire) {
+        clansCache.put(clan.getName(), clan, expire);
     }
 
-    public Clan[] getLoadedClans() {
-        return loadedClans.values().toArray(new Clan[loadedClans.size()]);
+    public static boolean isClanCached(String name) {
+        return clansCache.containsKey(name);
     }
 
-    public void loadClan(Clan clan) {
-        this.loadedClans.put(clan.getName(), clan);
-    }
-    public void unloadAll() {
-        this.loadedClans.clear();
+    public static void clearClansCache() {
+        clansCache.clear();
     }
 
-    public void unloadClan(String clan) {
-        loadedClans.remove(clan);
+
+    public static PlayerConfiguration getPlayerCache(OfflinePlayer player) {
+        return playersCache.get(player);
     }
+
+    public static void cachePlayer(PlayerConfiguration configuration) {
+        cachePlayer(configuration, true);
+    }
+
+    public static void cachePlayer(PlayerConfiguration configuration, boolean expire) {
+        playersCache.put(configuration.getPlayer(), configuration, expire);
+    }
+
+    public static boolean isPlayerCached(OfflinePlayer player) {
+        return playersCache.containsKey(player);
+    }
+
+    public static void clearPlayersCache() {
+        playersCache.clear();
+    }
+
+    public static void log(String... log) {
+        logger.info(String.join(" ", log));
+    }
+
+    public static void warn(String... log) {
+        logger.warning(String.join("", log));
+    }
+
 }

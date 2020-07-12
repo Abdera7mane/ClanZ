@@ -1,0 +1,40 @@
+no-permission: ''
+
+clan-created: ''
+clan-deleted: ''
+clan-open: ''
+clan-closed: ''
+join-clan: ''
+leave-clan: ''
+on-invit: ''
+invitation-accepted: ''
+invitation-denied: ''
+invitation-expired: ''
+member-promotted: ''
+member demotted: ''
+new-leader: ''
+
+help:
+  create:
+    description: ''
+    usage: '/clan create <clan_name>'
+
+  join:
+    description: ''
+    usage: '/clan join <clan>'
+
+  leave:
+    description: ''
+    usage: '/clan leave'
+
+  chat:
+    description: ''
+    usage: '/clan chat [public|clan]'
+
+  delete:
+    description: ''
+    usage: '/clan delete'
+
+  broadcast:
+    description: ''
+    message: '/clan broadcast <message>'
