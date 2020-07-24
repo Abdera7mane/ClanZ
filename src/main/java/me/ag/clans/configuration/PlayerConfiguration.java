@@ -104,6 +104,7 @@ public class PlayerConfiguration extends YamlConfiguration {
         this.save(file);
     }
 
+    @Override
     public void save(@NotNull File file) throws IOException {
         if (this.getKeys(false).size() > 0) {
             super.save(file);
@@ -113,6 +114,7 @@ public class PlayerConfiguration extends YamlConfiguration {
 
     }
 
+    @Override
     public String toString() {
         Configuration root = this.getRoot();
         return this.getClass().getSimpleName()

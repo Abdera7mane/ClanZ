@@ -29,6 +29,10 @@ public class ClanConfiguration extends YamlConfiguration {
     public static final File defaultPath;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
+    static {
+        String childPath = "\\data\\clans".replace("\\", File.separator);
+        defaultPath = new File(plugin.getDataFolder(), childPath);
+    }
 
     public static ClanConfiguration fromClan(@NotNull Clan clan) {
         ClanConfiguration configuration = new ClanConfiguration();
@@ -113,10 +117,5 @@ public class ClanConfiguration extends YamlConfiguration {
         String childPath = "\\".replace("\\", File.separator) + this.getDisplayName().toLowerCase() + ".yml";
         File dataFile = new File(defaultPath, childPath);
         this.save(dataFile);
-    }
-
-    static {
-        String childPath = "\\data\\clans".replace("\\", File.separator);
-        defaultPath = new File(plugin.getDataFolder(), childPath);
     }
 }

@@ -102,6 +102,7 @@ public class ClanMember {
 
     }
 
+    @Override
     public boolean equals(Object object) {
         if (object instanceof ClanMember) {
             return ((ClanMember)object).getPlayer() == this.player;
@@ -114,6 +115,7 @@ public class ClanMember {
         return ClanMemberConfigurationSection.fromClanMember(this);
     }
 
+    @Override
     public String toString() {
         return this.getClass().getSimpleName() + "[" + "clan='" + this.clan.getName() + "'" + ", player=" + this.player.getUniqueId() + ", role=" + this.role + ']';
     }
