@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>me.ag</groupId>
-    <artifactId>Clan</artifactId>
+    <artifactId>ClanZ</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
 
-    <name>Clans</name>
+    <name>ClanZ</name>
 
     <description>Create clans and have epic battles !</description>
     <properties>
@@ -39,7 +39,7 @@
                     <relocations>
                         <relocation>
                             <pattern>org.bstats</pattern>
-                            <shadedPattern>me.ag.clans</shadedPattern>
+                            <shadedPattern>me.ag</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -120,8 +120,8 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
+            <version>16.0.1</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
