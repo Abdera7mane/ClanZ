@@ -1,7 +1,7 @@
-name: Clans
+name: ${project.name}
 version: ${project.version}
 main: me.ag.clans.ClansPlugin
 api-version: '1.13'
 author: Abdera7mane
-description: Create clans and have epic battles !
+description: ${project.description}
 softdepend: [Vault]
