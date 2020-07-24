@@ -3,60 +3,90 @@ package me.ag.clans;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
+import me.ag.clans.commands.ClanCommand;
 import me.ag.clans.configuration.PlayerConfiguration;
+import me.ag.clans.listener.AsyncPlayerChatListener;
+import me.ag.clans.listener.PlayerDamageListener;
+import me.ag.clans.listener.PlayerJoinListener;
+import me.ag.clans.listener.PlayerQuitListener;
+import me.ag.clans.types.Clan;
+
 import net.milkbowl.vault.economy.Economy;
 
-//import org.bstats.bukkit.Metrics;
+import org.bstats.bukkit.Metrics;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import me.ag.clans.commands.ClanCommand;
-import me.ag.clans.types.Clan;
-import me.ag.clans.listener.PlayerJoinListener;
+import org.jetbrains.annotations.NotNull;
 
 public class ClansPlugin extends JavaPlugin {
     private static ClansPlugin instance;
     private static Economy econ;
-    private static MemoryCache<String, Clan> clansCache = new Cache<>(60000);
-    private static MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60000);
+    private static final MemoryCache<String, Clan> clansCache = new Cache<>(60000L);
+    private static final MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60000L);
     private static PluginManager pluginManager;
     private static Logger logger;
 
     @Override
     public void onEnable() {
         instance = this;
-        logger = getLogger();
-        pluginManager = getServer().getPluginManager();
+        logger = this.getLogger();
+        pluginManager = this.getServer().getPluginManager();
         pluginManager.registerEvents(new PlayerJoinListener(), this);
-
-        log("loading configuration");
-        loadConfig();
-        saveResource("messages.yml", false);
-
-        registerCommand(this.getDescription().getName(), new ClanCommand());
-
-        if (!setupEconomy() ) {
-            log("Vault not found! some functions are disabled");
+        pluginManager.registerEvents(new PlayerQuitListener(), this);
+        pluginManager.registerEvents(new PlayerDamageListener(), this);
+        pluginManager.registerEvents(new AsyncPlayerChatListener(), this);
+        log("loading configuration", Level.INFO);
+        this.loadConfig();
+        if (!(new File(this.getDataFolder(), "\\config.yml".replace("\\", File.separator))).isFile()) {
+            this.saveResource("messages.yml", false);
         }
-        //Metrics metrics = new Metrics(this, 516231);
+
+        this.registerCommand(this.getDescription().getName(), new ClanCommand());
+        if (!this.setupEconomy()) {
+            log("Vault not found! some functions are disabled", Level.WARNING);
+        }
+
+        new Metrics(this, 516231);
     }
 
     @Override
     public void onDisable() {
-        int size = clansCache.size();
+        int cSize = 0;
         for (Clan clan : clansCache.values()) {
-            clan.save();
+            try {
+                clan.save();
+                ++cSize;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        log(size + " §aClans have been saved");
+
+        log(cSize + "/" + clansCache.size() + " §aClans have been saved", Level.INFO);
         clearClansCache();
+
+        int pSize = 0;
+        for (PlayerConfiguration playerConfig : playersCache.values()) {
+            try {
+                playerConfig.save();
+                ++pSize;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        log(pSize + "/" + playersCache.size() + " §aPlayers have been saved", Level.INFO);
+        clearPlayersCache();
     }
 
     public static ClansPlugin getInstance() {
@@ -65,25 +95,28 @@ public class ClansPlugin extends JavaPlugin {
 
     private void registerCommand(String fallback, Command command) {
         try {
-            Field bukkitCommandMap = getServer().getClass().getDeclaredField("commandMap");
+            Field bukkitCommandMap = this.getServer().getClass().getDeclaredField("commandMap");
             bukkitCommandMap.setAccessible(true);
-            CommandMap commandMap = (CommandMap) bukkitCommandMap.get(getServer());
+            CommandMap commandMap = (CommandMap)bukkitCommandMap.get(this.getServer());
             commandMap.register(fallback, command);
-        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+        } catch (IllegalArgumentException | NoSuchFieldException | SecurityException | IllegalAccessException e) {
             e.printStackTrace();
         }
+
     }
 
     private boolean setupEconomy() {
-        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+        if (this.getServer().getPluginManager().getPlugin("Vault") == null) {
             return false;
+        } else {
+            RegisteredServiceProvider<Economy> rsp = this.getServer().getServicesManager().getRegistration(Economy.class);
+            if (rsp == null) {
+                return false;
+            } else {
+                econ = (Economy)rsp.getProvider();
+                return econ != null;
+            }
         }
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            return false;
-        }
-        econ = rsp.getProvider();
-        return econ != null;
     }
 
     public PluginManager getPluginManager() {
@@ -95,40 +128,39 @@ public class ClansPlugin extends JavaPlugin {
     }
 
     public void loadConfig() {
-        getConfig().options().copyDefaults(true);
-        saveConfig();
+        this.getConfig().options().copyDefaults(true);
+        this.saveConfig();
     }
 
-    public static Clan getClanCache(String name) {
-        return clansCache.get(name);
-    }
-
-    public static void cacheClan(Clan clan) {
-        cacheClan(clan, true);
+    @Nullable
+    public static Clan getClanCache(@NotNull String name) {
+        return clansCache.get(name.toLowerCase());
     }
 
     public static void cacheClan(Clan clan, boolean expire) {
-        clansCache.put(clan.getName(), clan, expire);
+        log(clan + "cached, expire=" + expire, ClansPlugin.LogLevel.DEBUG);
+        clansCache.put(clan.getName().toLowerCase(), clan, expire);
     }
 
-    public static boolean isClanCached(String name) {
-        return clansCache.containsKey(name);
+    public static boolean isClanCached(@NotNull String name) {
+        return clansCache.get(name.toLowerCase()) != null;
+    }
+
+    public static void removeClanCache(@NotNull String name) {
+        clansCache.remove(name.toLowerCase());
     }
 
     public static void clearClansCache() {
         clansCache.clear();
     }
 
-
+    @Nullable
     public static PlayerConfiguration getPlayerCache(OfflinePlayer player) {
-        return playersCache.get(player);
-    }
-
-    public static void cachePlayer(PlayerConfiguration configuration) {
-        cachePlayer(configuration, true);
+        return (PlayerConfiguration)playersCache.get(player);
     }
 
     public static void cachePlayer(PlayerConfiguration configuration, boolean expire) {
+        log(configuration + "cached, expire=" + expire, ClansPlugin.LogLevel.DEBUG);
         playersCache.put(configuration.getPlayer(), configuration, expire);
     }
 
@@ -136,16 +168,27 @@ public class ClansPlugin extends JavaPlugin {
         return playersCache.containsKey(player);
     }
 
+    public static void removePlayerCache(@NotNull OfflinePlayer player) {
+        playersCache.remove(player);
+    }
+
     public static void clearPlayersCache() {
         playersCache.clear();
     }
 
-    public static void log(String... log) {
-        logger.info(String.join(" ", log));
+    public static void log(String log) {
+        log(log, Level.INFO);
     }
 
-    public static void warn(String... log) {
-        logger.warning(String.join("", log));
+    public static void log(String log, Level logLevel) {
+        logger.log(logLevel, String.join(" ", log));
     }
 
+    static class LogLevel extends Level {
+        public static final Level DEBUG = new ClansPlugin.LogLevel("DEBUG", 600);
+
+        protected LogLevel(String name, int value) {
+            super(name, value);
+        }
+    }
 }
