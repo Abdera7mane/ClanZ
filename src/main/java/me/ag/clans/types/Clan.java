@@ -3,88 +3,126 @@ package me.ag.clans.types;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-import java.util.Map;
 import java.util.HashMap;
-
-import me.ag.clans.ClansPlugin;
-import me.ag.clans.configuration.ClanConfiguration;
-import me.ag.clans.events.ClanDeleteEvent;
-import me.ag.clans.events.PlayerJoinClanEvent;
-import me.ag.clans.events.PlayerLeaveClanEvent;
-
-import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class Clan {
-    private static ClansPlugin plugin = ClansPlugin.getInstance();
+import me.ag.clans.ClansPlugin;
+import me.ag.clans.configuration.ClanConfiguration;
+import me.ag.clans.configuration.ClanMemberConfigurationSection;
+import me.ag.clans.configuration.InvalidClanConfigurationException;
+import me.ag.clans.configuration.PlayerConfiguration;
+import me.ag.clans.events.ClanDeleteEvent;
+import me.ag.clans.events.PlayerJoinClanEvent;
+import me.ag.clans.events.PlayerLeaveClanEvent;
+import me.ag.clans.util.PlayerUtilities;
 
+import org.bukkit.OfflinePlayer;
+
+import org.jetbrains.annotations.NotNull;
+
+public class Clan {
+    private static final ClansPlugin plugin = ClansPlugin.getInstance();
     private final String name;
     private String description = "";
-    private boolean isOpen = true;
+    private Status state = Status.PUBLIC;
     private long level;
     private int totalKills;
-    private Date creationDate;
+    private final Date creationDate;
     private ClanMember leader;
-    private Map<OfflinePlayer, ClanMember> members = new HashMap<>();
+    private final Map<OfflinePlayer, ClanMember> members = new HashMap<>();
 
-    private ClanConfiguration configuration;
+    public enum Status {
+        PUBLIC,
+        INVITE_ONLY,
+        CLOSED;
 
-    public Clan(String name, OfflinePlayer leader) {
-        this.name = name;
-        this.addMember(leader);
-        this.setLeader(leader);
-        this.creationDate = new Date();
-        configuration = new ClanConfiguration();
-    }
-
-    public Clan(String name, ClanConfiguration configuration) {
-        this.name = name;
-        this.description = configuration.getDescription();
-        this.creationDate = configuration.getCreationDate();
-        this.totalKills = configuration.getKills();
-        this.level = configuration.getLevel();
-        this.isOpen = configuration.isOpen();
-        OfflinePlayer leader = configuration.getLeader();
-        this.addMember(leader);
-        this.setLeader(leader);
-        for (ConfigurationSection memberConfig : configuration.getMembers()) {
-            ClanMember member = new ClanMember(this, memberConfig);
-            members.put(member.getPlayer(), member);
-        }
     }
 
     public enum LeaveReason {
         QUIT,
-        KICK,
+        KICK;
+
     }
 
-    public void addMember(OfflinePlayer player) {
-        ClanMember member = new ClanMember(this, player);
-        PlayerJoinClanEvent event = new PlayerJoinClanEvent(member.getPlayer(), this);
-        plugin.getPluginManager().callEvent(event);
-        if (!event.isCancelled()) {
-            members.put(player, member);
-            Player onlinePlayer = player.getPlayer();
-            if (onlinePlayer != null) {
-                onlinePlayer.sendMessage("§aYou have joined §r" + this.getName() + " §aclan.");
-            }
+    public Clan(@NotNull String name, @NotNull OfflinePlayer leader) {
+        this.name = name;
+        this.addMember(leader, true);
+        this.setLeader(leader);
+        this.creationDate = new Date();
+    }
+
+    public Clan(@NotNull ClanConfiguration configuration) throws InvalidClanConfigurationException {
+        if (!ClanConfiguration.validate(configuration)) {
+            throw new InvalidClanConfigurationException(configuration + " has missing keys values: 'name', 'leader' or 'members' configuration");
         }
 
+        this.name = configuration.getDisplayName();
+        this.setDescription(configuration.getDescription());
+        this.creationDate = configuration.getCreationDate();
+        this.setKills(configuration.getKills());
+        this.setLevel(configuration.getLevel());
+        this.setStatus(configuration.getStatus());
+
+        for (ClanMemberConfigurationSection memberConfig : configuration.getMembers()) {
+            ClanMember member = new ClanMember(this, memberConfig);
+            this.members.put(member.getPlayer(), member);
+        }
+
+        this.setLeader(configuration.getLeader());
+
     }
 
-    public void removeMember(OfflinePlayer player, LeaveReason reason) {
+    public void addMember(@NotNull OfflinePlayer player, boolean silent) {
+        if (!this.hasMember(player)) {
+            ClanMember member = new ClanMember(this, player, ClanRole.MEMBER);
+            PlayerJoinClanEvent event = new PlayerJoinClanEvent(player, this);
+            plugin.getPluginManager().callEvent(event);
+            if (!event.isCancelled()) {
+                this.members.put(player, member);
+                PlayerConfiguration playerConfig = PlayerUtilities.getPlayerConfiguration(player);
+                playerConfig.setClan(this.name);
+                playerConfig.removeInvitation(this);
+
+                try {
+                    playerConfig.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (!silent) {
+                    member.sendMessage("§aYou have joined §r" + this.getName() + " §aclan.");
+                }
+            }
+
+        }
+    }
+
+    public void removeMember(@NotNull OfflinePlayer player, @NotNull Clan.LeaveReason reason) {
         PlayerLeaveClanEvent event = new PlayerLeaveClanEvent(player, this, reason);
-        if (!event.isCancelled() && members.containsKey(player))
-            members.get(player).leaveClan();
-            members.remove(player);
+        if (!event.isCancelled() && this.members.containsKey(player)) {
+            this.members.get(player).leaveClan(false);
+        }
+
+        this.members.remove(player);
     }
 
-    public void setLeader(OfflinePlayer leader) {
-        if (this.leader != null) this.leader.setRole(ClanRole.CO_LEADER);
-        this.leader = new ClanMember(this, leader, ClanRole.LEADER);
+    public void setLeader(@NotNull OfflinePlayer leader) {
+        if (this.hasMember(leader)) {
+            if (this.leader != null) {
+                if (this.leader.getPlayer() == leader) {
+                    return;
+                }
+
+                this.leader.demote();
+            }
+
+            ClanMember newLeader = this.members.get(leader);
+            newLeader.setRole(ClanRole.LEADER);
+            this.leader = newLeader;
+        }
+
     }
 
     public String getName() {
@@ -113,66 +151,73 @@ public class Clan {
 
     @Nullable
     public ClanMember getMember(OfflinePlayer player) {
-        return members.getOrDefault(player, null);
+        return this.members.get(player);
+    }
+
+    public boolean hasMember(OfflinePlayer player) {
+        return this.members.containsKey(player);
     }
 
     public ClanMember[] getMembers() {
-        return members.values().toArray(new ClanMember[0]);
+        return this.members.values().toArray(new ClanMember[0]);
     }
 
-
-    public boolean isOpen() {
-        return this.isOpen;
+    public Clan.Status getStatus() {
+        return this.state;
     }
 
-    public void open(boolean value) {
-        this.isOpen = value;
+    public void setStatus(@NotNull Clan.Status newState) {
+        this.state = newState;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(@NotNull String description) {
         this.description = description;
     }
 
     public void setKills(int kills) {
-        this.totalKills = kills;
+        this.totalKills = Math.max(kills, 0);
     }
 
     public void setLevel(long level) {
-        this.level = level;
-    }
-
-    public ClanConfiguration configuration() {
-        return configuration;
+        this.level = Math.max(level, 0L);
     }
 
     @Override
     public boolean equals(Object object) {
-        if (object instanceof Clan) {
-            return ((Clan) object).getName().equals(this.name);
-        }
-        return false;
+        return object instanceof Clan && ((Clan) object).getName().equals(this.name);
     }
 
-    public void save() {
-        configuration = ClanConfiguration.fromClan(this);
-        String childPath = "\\data\\clans\\".replace("\\", File.separator) + this.name + ".yml";
-        File dataFile = new File(plugin.getDataFolder(), childPath);
-        try {
-            configuration.save(dataFile);
-
-        } catch (IOException e) {
-            ClansPlugin.log("An error occured while saving the file '" + dataFile.getName() + "'");
-            e.printStackTrace();
-        }
+    public void save() throws IOException {
+        ClanConfiguration configuration = ClanConfiguration.fromClan(this);
+        configuration.save();
     }
 
     public void delete() {
         ClanDeleteEvent event = new ClanDeleteEvent(this);
         plugin.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
-        for (ClanMember member : members.values()) {
-            member.leaveClan();
+        if (!event.isCancelled()) {
+
+            for (ClanMember member : members.values()) {
+                this.removeMember(member.getPlayer(), Clan.LeaveReason.KICK);
+            }
+
+            String childPath = File.separator + this.name.toLowerCase() + ".yml";
+            File file = new File(ClanConfiguration.defaultPath, childPath);
+            file.delete();
+            ClansPlugin.removeClanCache(this.name);
         }
-        members.clear();
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName()
+                + "[" + "name='"
+                + this.name
+                + "', leader="
+                + this.leader.getPlayer().getUniqueId()
+                + ", members.size="
+                + this.members.size() + "]";
+    }
+
+
 }
