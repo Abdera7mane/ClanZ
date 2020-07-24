@@ -1,19 +1,20 @@
 package me.ag.clans.util;
 
+import java.io.File;
+import java.io.IOException;
+
+import javax.annotation.Nullable;
+
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.configuration.PlayerConfiguration;
 import me.ag.clans.types.Clan;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
+
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
-import java.io.File;
-import java.io.IOException;
-
 public class PlayerUtilities {
-    private static ClansPlugin plugin = ClansPlugin.getInstance();
 
     @Nullable
     public static Clan getPlayerClan(OfflinePlayer player) {
@@ -21,21 +22,24 @@ public class PlayerUtilities {
         return configuration.getClan();
     }
 
+    @NotNull
     public static PlayerConfiguration getPlayerConfiguration(@NotNull OfflinePlayer player) {
-        PlayerConfiguration configuration = new PlayerConfiguration();
-        String uuid = player.getUniqueId().toString();
-        String childPath = "\\data\\players".replace("\\", File.separator) + uuid + ".yml";
-        File file = new File(plugin.getDataFolder(),  childPath);
+        PlayerConfiguration configuration = new PlayerConfiguration(player);
         if (ClansPlugin.isPlayerCached(player)) {
             configuration = ClansPlugin.getPlayerCache(player);
         } else {
             try {
+                String uuid = player.getUniqueId().toString();
+                String childPath = File.separator + uuid + ".yml";
+                File file = new File(PlayerConfiguration.defaultPath, childPath);
                 configuration.load(file);
-            } catch (IOException | InvalidConfigurationException e) {
-                e.printStackTrace();
-            }
+                if (configuration.getKeys(false).size() == 0) {
+                    file.delete();
+                }
+            } catch (InvalidConfigurationException | IOException ignored) {}
         }
-        if (configuration.saveToString().length() == 0) file.delete();
+
+        ClansPlugin.cachePlayer(configuration, !player.isOnline());
         return configuration;
     }
 }
