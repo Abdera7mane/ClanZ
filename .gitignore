@@ -1,6 +1,7 @@
-/.idea/
-/target/
-/Clans.iml
+.idea/
+target/
+out/
+*.iml
 
 # Package Files #
 *.jar
