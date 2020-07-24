@@ -1,12 +1,15 @@
 package me.ag.clans.events;
 
 import me.ag.clans.types.Clan;
+
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+import org.jetbrains.annotations.NotNull;
+
 public class ClanDeleteEvent extends Event implements Cancellable {
-    private Clan clan;
+    private final Clan clan;
     private boolean isCancelled;
     private static final HandlerList handlers = new HandlerList();
 
@@ -32,6 +35,7 @@ public class ClanDeleteEvent extends Event implements Cancellable {
         return handlers;
     }
 
+    @NotNull
     @Override
     public HandlerList getHandlers() {
         return handlers;
