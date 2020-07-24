@@ -90,8 +90,8 @@ public class ClanCommand extends Command {
                         return true;
                     }
 
-                    else if (clanInstance.isOpen()) {
-                        clanInstance.addMember(player);
+                    else if (clanInstance.getStatus() == Clan.Status.PUBLIC) {
+                        clanInstance.addMember(player, false);
                     } else player.sendMessage("§cThis clan is closed.");
                 }
                 break;
