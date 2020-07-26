@@ -2,11 +2,10 @@ package me.ag.clans;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.annotation.Nullable;
 
 import me.ag.clans.commands.ClanCommand;
 import me.ag.clans.configuration.PlayerConfiguration;
@@ -14,6 +13,7 @@ import me.ag.clans.listener.AsyncPlayerChatListener;
 import me.ag.clans.listener.PlayerDamageListener;
 import me.ag.clans.listener.PlayerJoinListener;
 import me.ag.clans.listener.PlayerQuitListener;
+import me.ag.clans.messages.Messages;
 import me.ag.clans.types.Clan;
 
 import net.milkbowl.vault.economy.Economy;
@@ -28,6 +28,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ClansPlugin extends JavaPlugin {
     private static ClansPlugin instance;
@@ -36,6 +37,7 @@ public class ClansPlugin extends JavaPlugin {
     private static final MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60000L);
     private static PluginManager pluginManager;
     private static Logger logger;
+    private Messages messages;
 
     @Override
     public void onEnable() {
@@ -46,18 +48,16 @@ public class ClansPlugin extends JavaPlugin {
         pluginManager.registerEvents(new PlayerQuitListener(), this);
         pluginManager.registerEvents(new PlayerDamageListener(), this);
         pluginManager.registerEvents(new AsyncPlayerChatListener(), this);
-        log("loading configuration", Level.INFO);
+
         this.loadConfig();
-        if (!(new File(this.getDataFolder(), "\\config.yml".replace("\\", File.separator))).isFile()) {
-            this.saveResource("messages.yml", false);
-        }
 
         this.registerCommand(this.getDescription().getName(), new ClanCommand());
         if (!this.setupEconomy()) {
             log("Vault not found! some functions are disabled", Level.WARNING);
         }
 
-        new Metrics(this, 516231);
+        Metrics metrics = new Metrics(this, 8293);
+        log("bstats: " + metrics.isEnabled());
     }
 
     @Override
@@ -128,8 +128,27 @@ public class ClansPlugin extends JavaPlugin {
     }
 
     public void loadConfig() {
+        log("loading configuration", Level.INFO);
+        File configFile = new File(this.getDataFolder(), File.separator + "config.yml");
+        if (!configFile.isFile()) {
+            this.saveResource("config.yml", false);
+        }
         this.getConfig().options().copyDefaults(true);
         this.saveConfig();
+        Reader messagesRsc = getTextResource("messages.yml");
+        if (messagesRsc == null) {
+            log("couldn't find messages.yml in plugin's resource folder");
+            log("configuration failed to load");
+            getPluginManager().disablePlugin(this);
+            return;
+        } else {
+            messages = new Messages(messagesRsc);
+        }
+        log("Configuration successfully loaded");
+    }
+
+    public Messages getMessages() {
+        return this.messages;
     }
 
     @Nullable
