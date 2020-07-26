@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.types.Clan;
 import me.ag.clans.types.ClanInvitation;
@@ -18,6 +16,7 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class PlayerConfiguration extends YamlConfiguration {
     private final OfflinePlayer player;

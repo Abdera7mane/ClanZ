@@ -9,8 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
-
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.types.Clan;
 import me.ag.clans.types.ClanMember;
@@ -23,6 +21,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ClanConfiguration extends YamlConfiguration {
     private static final ClansPlugin plugin = ClansPlugin.getInstance();
