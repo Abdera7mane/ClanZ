@@ -1,129 +1,114 @@
 package me.ag.clans.commands;
 
-import me.ag.clans.types.Clan;
-import me.ag.clans.util.ClanUtilities;
-import me.ag.clans.ClansPlugin;
+import me.ag.clans.commands.subcommands.BroadcastCommand;
+import me.ag.clans.commands.subcommands.ChatCommand;
+import me.ag.clans.commands.subcommands.CreateCommand;
+import me.ag.clans.commands.subcommands.DeleteCommand;
+import me.ag.clans.commands.subcommands.DemoteCommand;
+import me.ag.clans.commands.subcommands.JoinCommand;
+import me.ag.clans.commands.subcommands.KickCommand;
+import me.ag.clans.commands.subcommands.LeaveCommand;
+import me.ag.clans.commands.subcommands.PromoteCommand;
+import me.ag.clans.commands.subcommands.ReloadCommand;
+import me.ag.clans.commands.subcommands.SubCommand;
 
-import me.ag.clans.util.PlayerUtilities;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.Player;
+import org.bukkit.command.TabCompleter;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-public class ClanCommand extends Command {
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-    private ClansPlugin plugin = ClansPlugin.getInstance();
-    private static final String[] PLAYER_COMMANDS = {"broadcast", "chat", "create", "demote", "delete", "join", "kick", "leave", "promote"};
-    private static final String[] CLAN_COMMANDS = {"broadcast", "chat", "demote", "delete", "kick", "leave", "promote"};
+public class ClanCommand extends Command implements TabCompleter {
+    private final Map<String, SubCommand> subCommandMap = new LinkedHashMap<>();
+
 
     public ClanCommand() {
         super("clan");
         setDescription("The main Clans command");
+        List<String> aliases = new ArrayList<>();
+        aliases.add("clans");
+        setAliases(aliases);
+
+        registerSubCommand(new BroadcastCommand());
+        registerSubCommand(new ChatCommand());
+        registerSubCommand(new CreateCommand());
+        registerSubCommand(new DeleteCommand());
+        registerSubCommand(new DemoteCommand());
+        registerSubCommand(new JoinCommand());
+        registerSubCommand(new KickCommand());
+        registerSubCommand(new LeaveCommand());
+        registerSubCommand(new PromoteCommand());
+        registerSubCommand(new ReloadCommand());
+    }
+
+    public boolean registerSubCommand(@NotNull SubCommand command) {
+        String label = command.getLabel().toLowerCase();
+        if (!subCommandMap.containsKey(label)) {
+            subCommandMap.put(label, command);
+            registerSubCommand(command.getAliases(), command);
+            return true;
+        }
+        return false;
+    }
+
+    public void registerSubCommand(@NotNull List<String> aliases, @NotNull SubCommand command) {
+        for (String alias : aliases) {
+            alias = alias.toLowerCase();
+            if (!subCommandMap.containsKey(alias)) {
+                subCommandMap.put(alias, command);
+            }
+        }
     }
 
     @Override
-    public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+    public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
             sendHelp(sender);
             return true;
         }
         String arg0 = args[0].toLowerCase();
-        if (Arrays.asList(PLAYER_COMMANDS).contains(arg0) && sender instanceof ConsoleCommandSender) {
-            sender.sendMessage("§cThis command is executable only by players.");
-            return true;
-        }
-
-        if (Arrays.asList(CLAN_COMMANDS).contains(arg0) && sender instanceof Player) {
-            Player player = (Player) sender;
-            if (PlayerUtilities.getPlayerClan(player) == null) {
-                player.sendMessage("§cYou are not in any clan");
+        if (subCommandMap.containsKey(arg0)) {
+            SubCommand subCommand = subCommandMap.get(arg0);
+            if (subCommand.isPlayerCommand() && sender instanceof ConsoleCommandSender) {
+                sender.sendMessage("§cthis is a player only command");
                 return true;
             }
-
+            boolean success = subCommand.execute(sender, commandLabel, args);
+            if (!success) sender.sendMessage(subCommand.getUsage());
+        } else {
+            sender.sendMessage("§c" + arg0 + " Command not found, please type:§r /clan help");
         }
-
-
-        switch (arg0) {
-            case "create":
-                if (PlayerUtilities.getPlayerClan((Player) sender) != null) {
-                    sender.sendMessage("§7you already have a clan");
-                    return true;
-                }
-
-                if (args.length < 2) {
-                    sender.sendMessage("§eUsage: §f/clan create §4[name]§r");
-                    return true;
-                }
-                {
-                    Player player = (Player) sender;
-                    String clanName = args[1];
-                    if (ClanUtilities.getClan(clanName) == null) {
-                        boolean success = ClanUtilities.createClan(clanName, player);
-                        if (!success) {
-                            player.sendMessage("§4Couldn't create the clan !");
-                        } else {
-                            player.sendMessage("§2Clan created ! YAY");
-                        }
-                        return true;
-                    }
-                    sender.sendMessage("§cThis clan already exists.");
-                }
-                break;
-            case "join":
-                if (PlayerUtilities.getPlayerClan((Player) sender) != null) {
-                    sender.sendMessage("§7you already have a clan");
-                    return true;
-                }
-
-                if (args.length < 2) {
-                    sender.sendMessage("§7supply a Clan");
-                    return true;
-                }
-                {
-                    Player player = (Player) sender;
-                    String clanName = args[1];
-                    Clan clanInstance = ClanUtilities.getClan(clanName);
-                    if (clanInstance == null) {
-                        player.sendMessage("§cCouldn't find a clan named §r" + clanName);
-                        return true;
-                    }
-
-                    else if (clanInstance.getStatus() == Clan.Status.PUBLIC) {
-                        clanInstance.addMember(player, false);
-                    } else player.sendMessage("§cThis clan is closed.");
-                }
-                break;
-
-            case "leave":
-                {
-                    Player player = (Player) sender;
-                    Clan clan = PlayerUtilities.getPlayerClan(player);
-                    if (clan != null) {
-                       clan.removeMember(player, Clan.LeaveReason.QUIT);
-                    } else player.sendMessage("§cYou don't have a clan !");
-                }
-                break;
-
-            case "reload":
-                plugin.reloadConfig();
-                ClansPlugin.log("§2Config reloaded !");
-                break;
-
-            case "test":
-                ClansPlugin.log(plugin.getConfig().saveToString());
-                break;
-
-            default:
-                sender.sendMessage("§7Type /clan help");
-                break;
-        }
-
         return true;
     }
-    private void sendHelp(CommandSender p) {
-        p.sendMessage("this is the help section");
+    private void sendHelp(CommandSender sender) {
+        for (SubCommand subCommand : new HashSet<>((subCommandMap.values()))) {
+            sender.sendMessage("[§4§lClans§r] " + subCommand.getLabel() + " | " + subCommand.getDescription());
+
+        }
     }
 
+    @Nullable
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        if (command.equals(this) && args.length <= 1) {
+            List<String> list = new ArrayList<>();
+            for (String argument : subCommandMap.keySet()) {
+                String arg0 = args.length > 0 ? args[0] : "";
+                if (argument.startsWith(arg0)) {
+                    list.add(argument);
+                }
+            }
+            return list;
+        }
+
+        return null;
+    }
 }
