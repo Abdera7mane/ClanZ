@@ -3,8 +3,6 @@ package me.ag.clans.util;
 import java.io.File;
 import java.io.IOException;
 
-import javax.annotation.Nullable;
-
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.configuration.PlayerConfiguration;
 import me.ag.clans.types.Clan;
@@ -13,6 +11,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class PlayerUtilities {
 
@@ -41,5 +40,9 @@ public class PlayerUtilities {
 
         ClansPlugin.cachePlayer(configuration, !player.isOnline());
         return configuration;
+    }
+
+    public static boolean hasClan(@NotNull OfflinePlayer player) {
+        return getPlayerClan(player) != null;
     }
 }
