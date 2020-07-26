@@ -3,8 +3,6 @@ package me.ag.clans.util;
 import java.io.File;
 import java.io.IOException;
 
-import javax.annotation.Nullable;
-
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.configuration.ClanConfiguration;
 import me.ag.clans.configuration.InvalidClanConfigurationException;
@@ -16,11 +14,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ClanUtilities {
     private static final ClansPlugin plugin = ClansPlugin.getInstance();
 
-    public static boolean createClan(@NotNull String name, @NotNull OfflinePlayer leader) {
+    public static boolean createClan(@NotNull String name, @NotNull OfflinePlayer leader) throws InvalidClanNameException {
+        if (!isValidClanName(name)) {
+            throw new InvalidClanNameException("");
+        }
         Clan clan = new Clan(name, leader);
         ClanCreateEvent event = new ClanCreateEvent(clan);
         plugin.getPluginManager().callEvent(event);
@@ -69,6 +71,10 @@ public class ClanUtilities {
         }
 
         return clan;
+    }
+
+    public static boolean clanExist(String name) {
+        return getClan(name) != null;
     }
 
     public static boolean isValidClanName(@NotNull String name) {
