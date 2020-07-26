@@ -28,8 +28,6 @@ public class PlayerQuitListener implements Listener {
         ClansPlugin.cachePlayer(configuration, true);
         Clan clan = configuration.getClan();
         if (clan != null) {
-            ClansPlugin.cacheClan(clan, true);
-
             try {
                 clan.save();
             } catch (IOException var6) {
