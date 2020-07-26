@@ -6,8 +6,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.configuration.ClanConfiguration;
 import me.ag.clans.configuration.ClanMemberConfigurationSection;
@@ -19,8 +17,10 @@ import me.ag.clans.events.PlayerLeaveClanEvent;
 import me.ag.clans.util.PlayerUtilities;
 
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class Clan {
     private static final ClansPlugin plugin = ClansPlugin.getInstance();
@@ -36,13 +36,13 @@ public class Clan {
     public enum Status {
         PUBLIC,
         INVITE_ONLY,
-        CLOSED;
+        CLOSED
 
     }
 
     public enum LeaveReason {
         QUIT,
-        KICK;
+        KICK
 
     }
 
@@ -76,11 +76,12 @@ public class Clan {
 
     public void addMember(@NotNull OfflinePlayer player, boolean silent) {
         if (!this.hasMember(player)) {
-            ClanMember member = new ClanMember(this, player, ClanRole.MEMBER);
             PlayerJoinClanEvent event = new PlayerJoinClanEvent(player, this);
             plugin.getPluginManager().callEvent(event);
             if (!event.isCancelled()) {
+                ClanMember member = new ClanMember(this, player, ClanRole.MEMBER);
                 this.members.put(player, member);
+
                 PlayerConfiguration playerConfig = PlayerUtilities.getPlayerConfiguration(player);
                 playerConfig.setClan(this.name);
                 playerConfig.removeInvitation(this);
@@ -180,6 +181,16 @@ public class Clan {
 
     public void setLevel(long level) {
         this.level = Math.max(level, 0L);
+    }
+
+    public void sendMessage(String message) {
+        for (ClanMember member : this.members.values()) {
+            member.sendMessage(message);
+        }
+    }
+
+    public void broadcast(String message, Player broadcaster) {
+        sendMessage("[" + this.name +  "]" + message);
     }
 
     @Override
