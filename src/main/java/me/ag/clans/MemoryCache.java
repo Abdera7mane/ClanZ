@@ -2,20 +2,24 @@ package me.ag.clans;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.jetbrains.annotations.NotNull;
 
 public abstract class MemoryCache<K, V> extends ConcurrentHashMap<K, V> {
     private final Map<K, Long> timeMap = new ConcurrentHashMap<>();
-    private long expiryInMillis = 1000L;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private long expireInMillis = 1000L;
 
     public MemoryCache() {
-        (new CleanerThread()).start();
+        scheduler.scheduleAtFixedRate(new CleanerThread(), 0, expireInMillis, TimeUnit.MILLISECONDS);
     }
 
     public MemoryCache(long expiryInMillis) {
-        this.expiryInMillis = expiryInMillis;
-        new CleanerThread().start();
+        this.expireInMillis = expiryInMillis;
+        scheduler.scheduleAtFixedRate(new CleanerThread(), 0, expiryInMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -26,7 +30,7 @@ public abstract class MemoryCache<K, V> extends ConcurrentHashMap<K, V> {
     public V put(@NotNull K key, @NotNull V value, boolean expire) {
         if (expire) {
             this.timeMap.put(key, System.currentTimeMillis());
-        } else if (this.timeMap.get(key) != null) {
+        } else {
             this.timeMap.remove(key);
         }
 
@@ -45,33 +49,21 @@ public abstract class MemoryCache<K, V> extends ConcurrentHashMap<K, V> {
         for (K key : map.keySet()) {
             put(key, map.get(key));
         }
-
     }
 
     class CleanerThread extends Thread {
-        CleanerThread() {
-        }
 
         @Override
         public void run() {
-            while(true) {
-                this.cleanup();
-
-                try {
-                    Thread.sleep(expiryInMillis / 2L);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            this.cleanup();
         }
 
         private void cleanup() {
             for (K key : timeMap.keySet())  {
-                if (System.currentTimeMillis() > timeMap.get(key) + expiryInMillis) {
+                if (System.currentTimeMillis() > timeMap.get(key) + expireInMillis) {
                     MemoryCache.this.remove(key);
                 }
             }
-
         }
     }
 }
