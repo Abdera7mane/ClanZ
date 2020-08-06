@@ -28,6 +28,8 @@ public abstract class SubCommand {
 
     public abstract boolean isPlayerCommand();
 
+    public abstract boolean clanRequired();
+
     public String getLabel() {
         return this.label;
     }
