@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class PlayerQuitListener implements Listener {
+    private static final ClansPlugin plugin = ClansPlugin.getInstance();
 
     @EventHandler
     private void onLeave(PlayerQuitEvent event) {
@@ -25,7 +26,7 @@ public class PlayerQuitListener implements Listener {
             e.printStackTrace();
         }
 
-        ClansPlugin.cachePlayer(configuration, true);
+        plugin.cachePlayer(configuration, true);
         Clan clan = configuration.getClan();
         if (clan != null) {
             try {
