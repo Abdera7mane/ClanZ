@@ -31,37 +31,87 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ClansPlugin extends JavaPlugin {
+    private static final long SAVE_INTERVAL = 30_000L;
     private static ClansPlugin instance;
-    private static Economy econ;
-    private static final MemoryCache<String, Clan> clansCache = new Cache<>(60000L);
-    private static final MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60000L);
     private static PluginManager pluginManager;
     private static Logger logger;
+
+    private  Economy econ;
+    private final MemoryCache<String, Clan> clansCache = new Cache<>(60_000L);
+    private final MemoryCache<OfflinePlayer, PlayerConfiguration> playersCache = new Cache<>(60_000L);
     private Messages messages;
+    private ClanCommand mainCommand;
+    private int saveTaskID;
+
+    class SaveTask extends Thread {
+
+        @Override
+        public void run() {
+                this.saveClans();
+                this.savePlayers();
+        }
+        protected void saveClans() {
+            for (Clan clan : clansCache.values()) {
+                try {
+                    clan.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        protected void savePlayers() {
+            for (PlayerConfiguration playerConfig: playersCache.values()) {
+                try {
+                    playerConfig.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
 
     @Override
     public void onEnable() {
         instance = this;
         logger = this.getLogger();
+
+        log("loading configuration");
+        if (!loadConfig()) {
+            log("configuration failed to load disabling plugin");
+            getPluginManager().disablePlugin(this);
+            return;
+        };
+
         pluginManager = this.getServer().getPluginManager();
+
         pluginManager.registerEvents(new PlayerJoinListener(), this);
         pluginManager.registerEvents(new PlayerQuitListener(), this);
         pluginManager.registerEvents(new PlayerDamageListener(), this);
         pluginManager.registerEvents(new AsyncPlayerChatListener(), this);
 
-        this.loadConfig();
+        this.mainCommand = new ClanCommand();
+        this.registerCommand(this.getDescription().getName(), mainCommand);
 
-        this.registerCommand(this.getDescription().getName(), new ClanCommand());
         if (!this.setupEconomy()) {
             log("Vault not found! some functions are disabled", Level.WARNING);
         }
 
-        Metrics metrics = new Metrics(this, 8293);
-        log("bstats: " + metrics.isEnabled());
+        new Metrics(this, 8293);
+
+
+        this.saveTaskID = getServer().getScheduler().scheduleSyncRepeatingTask(
+                this,
+                new SaveTask(),
+                0L,
+                SAVE_INTERVAL
+        );
     }
 
     @Override
     public void onDisable() {
+        getServer().getScheduler().cancelTask(saveTaskID);
         int cSize = 0;
         for (Clan clan : clansCache.values()) {
             try {
@@ -113,7 +163,7 @@ public class ClansPlugin extends JavaPlugin {
             if (rsp == null) {
                 return false;
             } else {
-                econ = (Economy)rsp.getProvider();
+                econ = rsp.getProvider();
                 return econ != null;
             }
         }
@@ -123,12 +173,15 @@ public class ClansPlugin extends JavaPlugin {
         return pluginManager;
     }
 
-    public static Economy getEconomy() {
+    public Economy getEconomy() {
         return econ;
     }
 
-    public void loadConfig() {
-        log("loading configuration", Level.INFO);
+    public ClanCommand getMainCommand() {
+        return this.mainCommand;
+    }
+
+    public boolean loadConfig() {
         File configFile = new File(this.getDataFolder(), File.separator + "config.yml");
         if (!configFile.isFile()) {
             this.saveResource("config.yml", false);
@@ -138,13 +191,18 @@ public class ClansPlugin extends JavaPlugin {
         Reader messagesRsc = getTextResource("messages.yml");
         if (messagesRsc == null) {
             log("couldn't find messages.yml in plugin's resource folder");
-            log("configuration failed to load");
-            getPluginManager().disablePlugin(this);
-            return;
+            return false;
         } else {
-            messages = new Messages(messagesRsc);
+            try {
+                this.messages = new Messages(messagesRsc);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+
         }
         log("Configuration successfully loaded");
+        return true;
     }
 
     public Messages getMessages() {
@@ -152,46 +210,46 @@ public class ClansPlugin extends JavaPlugin {
     }
 
     @Nullable
-    public static Clan getClanCache(@NotNull String name) {
+    public Clan getClanCache(@NotNull String name) {
         return clansCache.get(name.toLowerCase());
     }
 
-    public static void cacheClan(Clan clan, boolean expire) {
+    public  void cacheClan(Clan clan, boolean expire) {
         log(clan + "cached, expire=" + expire, ClansPlugin.LogLevel.DEBUG);
         clansCache.put(clan.getName().toLowerCase(), clan, expire);
     }
 
-    public static boolean isClanCached(@NotNull String name) {
+    public boolean isClanCached(@NotNull String name) {
         return clansCache.get(name.toLowerCase()) != null;
     }
 
-    public static void removeClanCache(@NotNull String name) {
+    public void removeClanCache(@NotNull String name) {
         clansCache.remove(name.toLowerCase());
     }
 
-    public static void clearClansCache() {
+    public void clearClansCache() {
         clansCache.clear();
     }
 
     @Nullable
-    public static PlayerConfiguration getPlayerCache(OfflinePlayer player) {
-        return (PlayerConfiguration)playersCache.get(player);
+    public PlayerConfiguration getPlayerCache(OfflinePlayer player) {
+        return playersCache.get(player);
     }
 
-    public static void cachePlayer(PlayerConfiguration configuration, boolean expire) {
+    public void cachePlayer(PlayerConfiguration configuration, boolean expire) {
         log(configuration + "cached, expire=" + expire, ClansPlugin.LogLevel.DEBUG);
         playersCache.put(configuration.getPlayer(), configuration, expire);
     }
 
-    public static boolean isPlayerCached(OfflinePlayer player) {
+    public boolean isPlayerCached(OfflinePlayer player) {
         return playersCache.containsKey(player);
     }
 
-    public static void removePlayerCache(@NotNull OfflinePlayer player) {
+    public void removePlayerCache(@NotNull OfflinePlayer player) {
         playersCache.remove(player);
     }
 
-    public static void clearPlayersCache() {
+    public void clearPlayersCache() {
         playersCache.clear();
     }
 
