@@ -18,4 +18,8 @@ public class KickCommand extends SubCommand {
     public boolean isPlayerCommand() {
         return true;
     }
+
+    public boolean clanRequired() {
+        return true;
+    }
 }

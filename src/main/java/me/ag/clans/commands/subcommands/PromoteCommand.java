@@ -18,4 +18,9 @@ public class PromoteCommand extends SubCommand{
     public boolean isPlayerCommand() {
         return true;
     }
+
+    @Override
+    public boolean clanRequired() {
+        return true;
+    }
 }

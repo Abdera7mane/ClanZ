@@ -25,19 +25,21 @@ public class CreateCommand extends SubCommand {
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        Player player = (Player) sender;
-        Messages messages = plugin.getMessages();
+        final Player player = (Player) sender;
+        final Messages messages = plugin.getMessages();
 
         if (PlayerUtilities.hasClan(player)) {
-            String message = messages.getErrorMessage("invalid-clan-name", new PlayerFormatter(player));
-            player.sendMessage("you already have a clan");
+            Clan clan = PlayerUtilities.getPlayerClan(player);
+            String message = messages.getErrorMessage(Messages.Errors.ALREADY_HAVE_CLAN, new PlayerFormatter(player), new ClanFormatter(clan));
+            player.sendMessage(message);
             return true;
         }
 
         if (args.length > 1) {
             String clanName = args[1];
             if (!ClanUtilities.isValidClanName(clanName)) {
-                player.sendMessage("invalid clan name provided");
+                String message = messages.getErrorMessage(Messages.Errors.INVALID_CLAN_NAME, new PlayerFormatter(player));
+                player.sendMessage(message);
             }
 
             else if (args.length > 2) {
@@ -47,7 +49,7 @@ public class CreateCommand extends SubCommand {
             }
             else if (ClanUtilities.clanExist(clanName)) {
                 Clan clan = ClanUtilities.getClan(clanName);
-                String message = messages.getErrorMessage("clan-exists", new PlayerFormatter(player), new ClanFormatter(clan));
+                String message = messages.getErrorMessage(Messages.Errors.CLAN_EXISTS, new PlayerFormatter(player), new ClanFormatter(clan));
                 player.sendMessage(message);
             }
 
@@ -56,7 +58,7 @@ public class CreateCommand extends SubCommand {
                     boolean success = ClanUtilities.createClan(clanName, player);
                     if (success) {
                         Clan createdClan = ClanUtilities.getClan(clanName);
-                        String message = messages.getMessage("clan-created", new PlayerFormatter(player), new ClanFormatter(createdClan));
+                        String message = messages.getMessage(Messages.Global.CLAN_CREATED, new PlayerFormatter(player), new ClanFormatter(createdClan));
                         player.sendMessage(message);
                     }
                 } catch (InvalidClanNameException ignored) {}
@@ -69,6 +71,11 @@ public class CreateCommand extends SubCommand {
 
     @Override
     public boolean isPlayerCommand() {
+        return true;
+    }
+
+    @Override
+    public boolean clanRequired() {
         return true;
     }
 }

@@ -17,25 +17,26 @@ public class DeleteCommand extends SubCommand {
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
         Player player = (Player) sender;
-        if (!PlayerUtilities.hasClan(player)) {
-            player.sendMessage("you are not in any clan");
-            return true;
-        }
+
+        Clan clan = PlayerUtilities.getPlayerClan(player);
+        ClanRole role = clan.getMember(player).getRole();
+        if (role == ClanRole.CAPTAIN) {
+            clan.delete();
+            }
         else {
-            Clan clan = PlayerUtilities.getPlayerClan(player);
-            ClanRole role = clan.getMember(player).getRole();
-            if (role == ClanRole.CAPTAIN) {
-                clan.delete();
-            }
-            else {
-                player.sendMessage("no enough permissions to do that");
-            }
+            player.sendMessage("no enough permissions to do that");
         }
+
         return false;
     }
 
     @Override
     public boolean isPlayerCommand() {
+        return true;
+    }
+
+    @Override
+    public boolean clanRequired() {
         return true;
     }
 }

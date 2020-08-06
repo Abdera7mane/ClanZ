@@ -2,6 +2,9 @@ package me.ag.clans.commands.subcommands;
 
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.messages.Messages;
+import me.ag.clans.messages.formatter.ClanFormatter;
+import me.ag.clans.messages.formatter.Formatter;
+import me.ag.clans.messages.formatter.PlayerFormatter;
 import me.ag.clans.types.Clan;
 import me.ag.clans.util.ClanUtilities;
 import me.ag.clans.util.PlayerUtilities;
@@ -24,7 +27,9 @@ public class JoinCommand extends SubCommand {
         Messages messages = plugin.getMessages();
 
         if (PlayerUtilities.hasClan(player)) {
-            player.sendMessage("you already have a clan");
+            Clan clan = PlayerUtilities.getPlayerClan(player);
+            String message = messages.getErrorMessage(Messages.Errors.ALREADY_HAVE_CLAN, new PlayerFormatter(player), new ClanFormatter(clan));
+            player.sendMessage(message);
             return true;
         }
         else if (args.length < 2) {
@@ -34,15 +39,19 @@ public class JoinCommand extends SubCommand {
         String clanName = args[1];
         Clan clan = ClanUtilities.getClan(clanName);
         if (clan != null) {
+            Formatter[] formatters = {new PlayerFormatter(player), new ClanFormatter(clan)};
+            String message;
             switch (clan.getStatus()) {
                 case PUBLIC:
                     clan.addMember(player, false);
                     break;
                 case INVITE_ONLY:
-                    sender.sendMessage("invitation sent to clan: " + clan.getName());
+                    message = messages.getMessage(Messages.Global.INVITATION_SENT, formatters);
+                    sender.sendMessage(message);
                     break;
                 case CLOSED:
-                    sender.sendMessage("this clan is closed");
+                    message = messages.getMessage(Messages.Global.CLAN_CLOSED, formatters);
+                    sender.sendMessage(message);
                     break;
             }
             return true;
@@ -53,5 +62,10 @@ public class JoinCommand extends SubCommand {
     @Override
     public boolean isPlayerCommand() {
         return true;
+    }
+
+    @Override
+    public boolean clanRequired() {
+        return false;
     }
 }

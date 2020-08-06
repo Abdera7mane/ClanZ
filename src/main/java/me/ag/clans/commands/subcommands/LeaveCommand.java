@@ -16,25 +16,26 @@ public class LeaveCommand extends SubCommand {
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
         Player player = (Player) sender;
-        if (!PlayerUtilities.hasClan(player)) {
-            player.sendMessage("you are not in any clan");
-            return true;
+
+        Clan clan = PlayerUtilities.getPlayerClan(player);
+        ClanRole role = clan.getMember(player).getRole();
+        if (role != ClanRole.CAPTAIN) {
+            clan.removeMember(player, Clan.LeaveReason.QUIT);
         }
         else {
-            Clan clan = PlayerUtilities.getPlayerClan(player);
-            ClanRole role = clan.getMember(player).getRole();
-            if (role != ClanRole.CAPTAIN) {
-                clan.removeMember(player, Clan.LeaveReason.QUIT);
-            }
-            else {
-                player.sendMessage("you can't leave the clan since you are the leader!");
-            }
+            player.sendMessage("you can't leave the clan since you are the leader!");
         }
+
         return false;
     }
 
     @Override
     public boolean isPlayerCommand() {
+        return true;
+    }
+
+    @Override
+    public boolean clanRequired() {
         return true;
     }
 }
