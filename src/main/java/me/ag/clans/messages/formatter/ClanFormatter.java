@@ -20,6 +20,7 @@ public class ClanFormatter implements Formatter {
         String formatted = message;
 
         final String name = this.clan.getName();
+        final String leader = this.clan.getLeader().getPlayer().getName();
         final String description = this.clan.getDescription();
         final String kills = String.valueOf(this.clan.getKills());
         final String level = String.valueOf(this.clan.getLevel());
@@ -28,6 +29,7 @@ public class ClanFormatter implements Formatter {
         final String creationDate = dateFormat.format(this.clan.getCreationDate());
 
         formatted = formatted.replace("{clan}", name);
+        formatted = formatted.replace("{clan.leader}", leader);
         formatted = formatted.replace("{clan.description}", description);
         formatted = formatted.replace("{clan.kills}", kills);
         formatted = formatted.replace("{clan.level}", level);
