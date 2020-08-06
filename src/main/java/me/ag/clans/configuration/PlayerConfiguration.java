@@ -40,14 +40,14 @@ public class PlayerConfiguration extends YamlConfiguration {
             clan = ClanUtilities.getClan(clanName);
         }
 
-        if (clan == null) {
+        if (clan == null || clan.getMember(this.player) == null) {
             this.setClan(null);
         }
 
         return clan;
     }
 
-    public void setClan(String name) {
+    public void setClan(@Nullable String name) {
         this.set("clan", name);
     }
 
@@ -98,7 +98,7 @@ public class PlayerConfiguration extends YamlConfiguration {
 
     public void save() throws IOException {
         String uuid = this.player.getUniqueId().toString();
-        String childPath = uuid + ".yml";
+        String childPath = File.separator + uuid + ".yml";
         File file = new File(defaultPath, childPath);
         this.save(file);
     }
@@ -108,7 +108,8 @@ public class PlayerConfiguration extends YamlConfiguration {
         if (this.getKeys(false).size() > 0) {
             super.save(file);
         } else {
-            file.delete();
+            boolean success = file.delete();
+            if (!success) ClansPlugin.log("could not delete file: " + file.getPath());
         }
 
     }
