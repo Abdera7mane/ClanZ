@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class PlayerUtilities {
+    private static final ClansPlugin plugin = ClansPlugin.getInstance();
 
     @Nullable
     public static Clan getPlayerClan(OfflinePlayer player) {
@@ -24,8 +25,8 @@ public class PlayerUtilities {
     @NotNull
     public static PlayerConfiguration getPlayerConfiguration(@NotNull OfflinePlayer player) {
         PlayerConfiguration configuration = new PlayerConfiguration(player);
-        if (ClansPlugin.isPlayerCached(player)) {
-            configuration = ClansPlugin.getPlayerCache(player);
+        if (plugin.isPlayerCached(player)) {
+            configuration = plugin.getPlayerCache(player);
         } else {
             try {
                 String uuid = player.getUniqueId().toString();
@@ -38,7 +39,7 @@ public class PlayerUtilities {
             } catch (InvalidConfigurationException | IOException ignored) {}
         }
 
-        ClansPlugin.cachePlayer(configuration, !player.isOnline());
+        plugin.cachePlayer(configuration, !player.isOnline());
         return configuration;
     }
 
