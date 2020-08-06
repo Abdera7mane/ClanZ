@@ -36,7 +36,7 @@ public class ClanUtilities {
             e.printStackTrace();
         }
 
-        ClansPlugin.cacheClan(clan, !leader.isOnline());
+        plugin.cacheClan(clan, !leader.isOnline());
         return true;
 
     }
@@ -44,8 +44,8 @@ public class ClanUtilities {
     @Nullable
     public static Clan getClan(String name) {
         Clan clan = null;
-        if (ClansPlugin.isClanCached(name)) {
-            clan = ClansPlugin.getClanCache(name);
+        if (plugin.isClanCached(name)) {
+            clan = plugin.getClanCache(name);
         } else {
             String childPath = File.separator + name.toLowerCase() + ".yml";
             File file = new File(ClanConfiguration.defaultPath, childPath);
@@ -67,7 +67,7 @@ public class ClanUtilities {
                 }
             }
 
-            ClansPlugin.cacheClan(clan, expire);
+            plugin.cacheClan(clan, expire);
         }
 
         return clan;
