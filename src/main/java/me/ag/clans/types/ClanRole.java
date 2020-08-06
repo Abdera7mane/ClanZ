@@ -22,7 +22,7 @@ public enum ClanRole {
     }
 
     public String getDisplayName() {
-        return plugin.getConfig().getString(String.format("clan.roles.%s.name", this.toString().toLowerCase()));
+        return plugin.getMessages().getLabel("roles." + this.toString().toLowerCase());
     }
 
 }
