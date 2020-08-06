@@ -6,6 +6,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+
 import org.jetbrains.annotations.NotNull;
 
 public class PlayerJoinClanEvent extends Event implements Cancellable {
@@ -19,10 +20,12 @@ public class PlayerJoinClanEvent extends Event implements Cancellable {
         this.clan = clan;
     }
 
+    @NotNull
     public OfflinePlayer getPlayer() {
         return this.player;
     }
 
+    @NotNull
     public Clan getClan() {
         return this.clan;
     }

@@ -17,6 +17,7 @@ public class ClanInviteEvent extends Event implements Cancellable {
         this.invitation = invitation;
     }
 
+    @NotNull
     public ClanInvitation getInvitation() {
         return this.invitation;
     }

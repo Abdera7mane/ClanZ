@@ -22,10 +22,12 @@ public class PlayerLeaveClanEvent extends Event implements Cancellable {
         this.reason = reason;
     }
 
+    @NotNull
     public OfflinePlayer getPlayer() {
         return this.player;
     }
 
+    @NotNull
     public Clan getClan() {
         return this.clan;
     }

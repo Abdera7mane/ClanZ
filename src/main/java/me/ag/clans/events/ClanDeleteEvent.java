@@ -17,6 +17,7 @@ public class ClanDeleteEvent extends Event implements Cancellable {
         this.clan = clan;
     }
 
+    @NotNull
     public Clan getClan() {
         return this.clan;
     }

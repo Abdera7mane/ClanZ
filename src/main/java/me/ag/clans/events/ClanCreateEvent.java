@@ -5,6 +5,7 @@ import me.ag.clans.types.Clan;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+
 import org.jetbrains.annotations.NotNull;
 
 
@@ -17,6 +18,7 @@ public class ClanCreateEvent extends Event implements Cancellable {
         this.clan = clan;
     }
 
+    @NotNull
     public Clan getClan() {
         return this.clan;
     }
