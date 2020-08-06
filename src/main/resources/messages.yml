@@ -1,66 +1,87 @@
-prefix: '&l[&4&lClanZ&l]&r'
+prefix: '&l[&4&lClanZ&f&l]&r'
 prefixed: true
 
+help-format: '&8{command.label}&r | &7{command.description}'
+
+global:
+  clan-created: '&aYou have created {clan} !'
+  clan-deleted: '&aYou have deleted {clan}'
+  clan-closed: '&a{clan} is closed and doesn''t accept new members'
+  join-clan: '&aYou have joined&r {clan} &aclan'
+  player-joined: '{displayname} &ehas joined the clan.'
+  leave-clan: ''
+  player-left: '{displayname} &ehas left the clan.'
+  invitation-sent: 'An Invitation has been sent to {invited} to join {clan}'
+  invitation-accepted: 'Your invitation has been accepted'
+  invitation-denied: 'Your invitation has been rejected'
+  invitation-expired: ''
+  member-promoted: '{displayename} &7has been promoted to &b{role}'
+  member-demoted: '{displayename} &7has been promoted to &b{role}'
+  new-leader: '{clan.leader} is now the new leader of {clan}'
+
 errors:
-  no-permission: &cYou don't have permission to execute this command
+  no-permission: '&4You don''t have permission to execute &c{command}}'
   no-clan-permission: ''
-  invalid-clan-name: invalid clan name
-  clan-exists: &4This clan already exists
+  invalid-clan-name: 'invalid clan name'
+  clan-exists: '&4This clan already exists'
+  already-have-clan: '&cYou already have clan'
+  player-only-command: '&c{command} &4is executable by players in game only'
+  no-clan: '&cYou don''t have a clan to execute {command}'
 
-clan-created: &aYou have created {clan} clan !
-clan-deleted: &aYou have deleted {clan}
-join-clan: ''
-leave-clan: ''
-on-invit: ''
-invitation-accepted: ''
-invitation-denied: ''
-invitation-expired: ''
-member-promotted: ''
-member demotted: ''
-new-leader: ''
+labels:
+  status:
+    public: public
+    invite_only: invite only
+    closed: closed
 
-status:
-  public: public
-  invite_only: invite only
-  closed: closed
+  roles:
+    recruit: Recruit
+    member: Member
+    junior_member: Junior member
+    senior_member: Senior member
+    squad_leader: Squad leader
+    vice_capitan: Vice capitan
+    capitan: Capitan
+    co_leader: Co-leader
+    leader: Leader
 
 commands:
   broadcast:
-    description: broadcast a message to all clan members
+    description: 'broadcast a message to all clan members'
     usage: '/clan broadcast <message>'
 
   chat:
-    description: toggle between public chat and clan chat
+    description: 'toggle between public chat and clan chat'
     usage: '/clan chat [public|clan]'
 
   create:
-    description: create a new clan
+    description: 'create a new clan'
     usage: '/clan create <clan_name>'
 
   delete:
-    description: delete the clan
+    description: 'delete the clan'
     usage: '/clan delete'
 
   demote:
-    description: demote a player in the clan
+    description: 'demote a player in the clan'
     usage: '/clan demote <player>'
 
   join:
-    description: join a clan
+    description: 'join a clan'
     usage: '/clan join <clan>'
 
   kick:
-    description: kick a player from the clan
+    description: 'kick a player from the clan'
     usage: '/clan kick <player>'
 
   leave:
-    description: leave the clan
+    description: 'leave the clan'
     usage: '/clan leave'
 
   promote:
-    description: promote a player in the clan
+    description: 'promote a player in the clan'
     usage: '/clan promote <player>'
 
   reload:
-    description: reload configuration
+    description: 'reload configuration'
     usage: '/clan reload'
