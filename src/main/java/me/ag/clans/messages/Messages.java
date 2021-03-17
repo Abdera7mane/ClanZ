@@ -1,34 +1,35 @@
 package me.ag.clans.messages;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-
-import me.ag.clans.ClansPlugin;
 import me.ag.clans.commands.subcommands.SubCommand;
 import me.ag.clans.messages.formatter.CommandFormatter;
 import me.ag.clans.messages.formatter.Formatter;
 
+import me.ag.clans.types.ClanRole;
 import net.md_5.bungee.api.ChatColor;
 
+import org.bukkit.Location;
+import org.bukkit.Sound;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
 
 public class Messages {
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
     private final FileConfiguration configuration;
 
+    public interface MessageKey {
+        @NotNull String getKeyPath();
+    }
 
-    public enum Global {
+    public enum Globals implements MessageKey {
         CLAN_CREATED("clan-created"),
         CLAN_DELETED("clan-deleted"),
         CLAN_CLOSED("clan-closed"),
-        JOIN_CLAN("join-clan"),
-        PLAYER_JOINED("player-joined"),
-        LEAVE_CLAN("leave-clan"),
-        PLAYER_LEFT("player-left"),
+        JOIN_CLAN("you-have-joined-the-clan"),
+        PLAYER_JOINED("on-clan-join"),
+        LEAVE_CLAN("you-have-left-the-clan"),
+        PLAYER_LEFT("on-clan-leave"),
         INVITATION_SENT("invitation-sent"),
         INVITATION_ACCEPTED("invitation-accepted"),
         INVITATION_DENIED("invitation-denied"),
@@ -37,45 +38,46 @@ public class Messages {
         MEMBER_DEMOTED("member-demoted"),
         NEW_LEADER("new-leader");
 
-        public final String keyPath;
+        private final String keyPath;
 
-        Global(String keyPath) {
+
+        Globals(String keyPath) {
             this.keyPath = "global." + keyPath;
+        }
+
+        @NotNull
+        @Override
+        public String getKeyPath() {
+            return this.keyPath;
         }
     }
 
-    public enum Errors {
+    public enum Errors implements MessageKey {
         NO_PERMISSION("no-permission"),
         NO_CLAN_PERMISSION("no-clan-permission"),
         INVALID_CLAN_NAME("invalid-clan-name"),
+        NO_SPACES_IN_CLAN_NAME("no-spaces-in-clan-name"),
         CLAN_EXISTS("clan-exists"),
+        CLAN_NOT_FOUND("clan-not-found"),
         ALREADY_HAVE_CLAN("already-have-clan"),
         PLAYER_ONLY_COMMAND("player-only-command"),
         NO_CLAN("no-clan");
 
-        public final String keyPath;
+        private final String keyPath;
 
         Errors(String keyPath) {
             this.keyPath = "errors." + keyPath;
         }
+
+        @NotNull
+        @Override
+        public  String getKeyPath() {
+            return this.keyPath;
+        }
     }
 
-
-    public Messages(Reader reader) {
-        File messagesConfigFile = new File(plugin.getDataFolder(), File.separator + "messages.yml");
-        if (!messagesConfigFile.isFile()) {
-            plugin.saveResource("messages.yml", false);
-        }
-
-        this.configuration = YamlConfiguration.loadConfiguration(messagesConfigFile);
-
-        this.configuration.addDefaults(YamlConfiguration.loadConfiguration(reader));
-
-        try {
-            this.configuration.save(messagesConfigFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public Messages(FileConfiguration currentConfig) {
+        this.configuration = currentConfig;
     }
 
 
@@ -84,13 +86,14 @@ public class Messages {
     }
 
 
+    @SuppressWarnings("ConstantConditions")
     @NotNull
     private String getColored(@NotNull String path) {
         return ChatColor.translateAlternateColorCodes('&', getConfig().getString(path, ""));
     }
 
     @NotNull
-    private String getFormatted(@NotNull String path, @NotNull Formatter... formatters) {
+    private String getFormatted(@NotNull String path, boolean withPrefix, @NotNull Formatter... formatters) {
         final String prefix = getPrefix();
         final boolean prefixed = getConfig().getBoolean("prefixed", true);
 
@@ -98,8 +101,8 @@ public class Messages {
         for (Formatter formatter : formatters) {
             message = formatter.format(message);
         }
-        System.out.println(message);
-        return prefixed ? prefix : "" + message;
+
+        return (prefixed && withPrefix ? prefix + " " : "") + message;
     }
 
     @NotNull
@@ -108,20 +111,19 @@ public class Messages {
     }
 
     @NotNull
-    public String getMessage(@NotNull Messages.Global message, @NotNull Formatter... formatters) {
-        return getFormatted(message.keyPath, formatters);
+    public String getMessage(@NotNull MessageKey message, @NotNull Formatter... formatters) {
+        return getMessage(message, true, formatters);
     }
 
     @NotNull
-    public String getErrorMessage(@NotNull Messages.Errors errorMessage, @NotNull Formatter... formatters) {
-        return getFormatted(errorMessage.keyPath, formatters);
+    public String getMessage(@NotNull MessageKey message, boolean withPrefix, @NotNull Formatter... formatters) {
+        return getFormatted(message.getKeyPath(), withPrefix, formatters);
     }
-
-    @NotNull
-    public String getLabel(@NotNull String path) {
-        return getColored("labels." + path);
+    
+    public String getRoleDisplayName(@NotNull ClanRole role) {
+        return this.getColored("labels.roles." + role.toString().toLowerCase());
     }
-
+    
     @NotNull
     public String getSubCommandDescription(@NotNull SubCommand command) {
         return getColored("commands." + command.getLabel() + ".description");
@@ -134,6 +136,22 @@ public class Messages {
 
     @NotNull
     public String getHelpFormat(SubCommand command) {
-        return getFormatted("help-format", new CommandFormatter(command));
+        return getFormatted("help-format", true, new CommandFormatter(command));
+    }
+
+    public void sendMessage(@NotNull MessageKey messageKey, @NotNull CommandSender to, Formatter... formatters) {
+        this.sendMessage(messageKey, to, true, formatters);
+    }
+
+    public void sendMessage(@NotNull MessageKey messageKey, @NotNull CommandSender to, boolean withPrefix, Formatter... formatters) {
+        final String message = this.getFormatted(messageKey.getKeyPath(), withPrefix, formatters);
+        final Sound sound = null;
+        to.sendMessage(message);
+        if (to instanceof Player) {
+            Player player = (Player) to;
+            final Location location = player.getLocation();
+            if (sound != null)
+                player.playSound(location, sound, 1.0f, 1.0f);
+        }
     }
 }

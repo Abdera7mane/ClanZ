@@ -3,27 +3,42 @@ package me.ag.clans.types;
 import me.ag.clans.ClansPlugin;
 
 public enum ClanRole {
-    RECRUIT(0),
-    MEMBER(1),
-    JUNIOR_MEMBER(2),
-    SENIOR_MEMBER(3),
-    SQUAD_LEADER(4),
-    VICE_CAPTAIN(5),
-    CAPTAIN(6),
-    CO_LEADER(7),
-    LEADER(8);
-
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
-
-    public final int priority;
-
-    ClanRole(int priority) {
-        this.priority = priority;
-    }
+    RECRUIT,
+    MEMBER,
+    JUNIOR_MEMBER,
+    SENIOR_MEMBER,
+    SQUAD_LEADER,
+    VICE_CAPTAIN,
+    CAPTAIN,
+    CO_LEADER,
+    LEADER;
 
     public String getDisplayName() {
-        return plugin.getMessages().getLabel("roles." + this.toString().toLowerCase());
+        return ClansPlugin.getInstance().getMessages().getRoleDisplayName(this);
     }
 
+    public ClanRole next() {
+        if (this.isHighest()) {
+            return null;
+        }
+
+        return values()[this.ordinal() + 1];
+    }
+
+    public ClanRole previous() {
+        if (this.isLowest()) {
+            return null;
+        }
+
+        return values()[this.ordinal() - 1];
+    }
+
+    public boolean isHighest() {
+        return this.ordinal() == values().length;
+    }
+
+    public boolean isLowest() {
+        return this.ordinal() == 0;
+    }
 }
 

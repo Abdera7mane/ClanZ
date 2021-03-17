@@ -4,29 +4,31 @@ prefixed: true
 help-format: '&8{command.label}&r | &7{command.description}'
 
 global:
-  clan-created: '&aYou have created {clan} !'
-  clan-deleted: '&aYou have deleted {clan}'
+  clan-created: '&aYou have created&r {clan} !'
+  clan-deleted: '&cYou have deleted&r {clan}'
   clan-closed: '&a{clan} is closed and doesn''t accept new members'
-  join-clan: '&aYou have joined&r {clan} &aclan'
-  player-joined: '{displayname} &ehas joined the clan.'
-  leave-clan: ''
-  player-left: '{displayname} &ehas left the clan.'
+  you-have-joined-the-clan: '&aYou have joined&r {clan} &aclan'
+  on-clan-join: '{displayname} &ehas joined the clan.'
+  you-have-left-the-clan: '&7You have left &c{clan}'
+  on-clan-leave: '{displayname} &ehas left the clan.'
   invitation-sent: 'An Invitation has been sent to {invited} to join {clan}'
-  invitation-accepted: 'Your invitation has been accepted'
-  invitation-denied: 'Your invitation has been rejected'
-  invitation-expired: ''
-  member-promoted: '{displayename} &7has been promoted to &b{role}'
-  member-demoted: '{displayename} &7has been promoted to &b{role}'
+  invitation-accepted: '&2Your invitation has been accepted'
+  invitation-denied: '&cYour invitation has been rejected'
+  invitation-expired: '&cThe invitation expired'
+  member-promoted: '{displayname} &7has been promoted to &b{role}'
+  member-demoted: '{displayname} &7has been promoted to &b{role}'
   new-leader: '{clan.leader} is now the new leader of {clan}'
 
 errors:
   no-permission: '&4You don''t have permission to execute &c{command}}'
-  no-clan-permission: ''
-  invalid-clan-name: 'invalid clan name'
+  no-clan-permission: 'You don''t have enough permissions in {clan}'
+  invalid-clan-name: 'invalid clan name provided, use only alphanumeric characters'
+  no-spaces-in-clan-name: Clan name can't contain spaces'
   clan-exists: '&4This clan already exists'
+  clan-not-found: 'couldn''t find this clan'
   already-have-clan: '&cYou already have clan'
-  player-only-command: '&c{command} &4is executable by players in game only'
-  no-clan: '&cYou don''t have a clan to execute {command}'
+  player-only-command: '&c{command.label} &4is executable by players in game only'
+  no-clan: 'You are not in any clan!'
 
 labels:
   status:
@@ -45,6 +47,13 @@ labels:
     co_leader: Co-leader
     leader: Leader
 
+sounds:
+  on-clan-join: BLOCK_NOTE_BLOCK_HARP
+  #default:
+  error-default: BLOCK_NOTE_BLOCK_BASS
+
+#<required>, [optional]
+#!!! changing command's usage will not change how the command is executed
 commands:
   broadcast:
     description: 'broadcast a message to all clan members'
@@ -65,6 +74,10 @@ commands:
   demote:
     description: 'demote a player in the clan'
     usage: '/clan demote <player>'
+
+  help:
+    description: 'show help for specific command'
+    usage: '/clan help [command]'
 
   join:
     description: 'join a clan'

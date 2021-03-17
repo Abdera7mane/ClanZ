@@ -1,15 +1,14 @@
 package me.ag.clans.messages.formatter;
 
-import me.ag.clans.commands.subcommands.SubCommand;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 
-public class CommandFormatter implements Formatter {
+public class CommandSenderFormatter implements Formatter {
 
-    private final SubCommand sender;
+    private final CommandSender sender;
 
-    public CommandFormatter(@NotNull SubCommand console) {
+    public CommandSenderFormatter(@NotNull CommandSender console) {
         this.sender = console;
     }
 

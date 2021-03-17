@@ -46,10 +46,6 @@ public class PlayerLeaveClanEvent extends Event implements Cancellable {
         isCancelled = cancel;
     }
 
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
     @NotNull
     @Override
     public HandlerList getHandlers() {

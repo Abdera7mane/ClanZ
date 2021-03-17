@@ -1,60 +1,53 @@
 package me.ag.clans.types;
 
-import java.io.IOException;
 import java.util.Date;
-
-import me.ag.clans.configuration.ClanMemberConfigurationSection;
-import me.ag.clans.configuration.PlayerConfiguration;
-import me.ag.clans.util.PlayerUtilities;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+
 import org.jetbrains.annotations.NotNull;
 
 public class ClanMember {
+
     private final Clan clan;
-    private final OfflinePlayer player;
+    private final OfflinePlayer offlinePlayer;
+    private final Date joinDate;
     private ClanRole role;
     private int totalKills;
-    private final Date joinDate;
 
-    protected ClanMember(@NotNull Clan clan, @NotNull OfflinePlayer player, @NotNull ClanRole role) {
+    protected ClanMember(@NotNull Clan clan, @NotNull OfflinePlayer player) {
         this.clan = clan;
-        this.player = player;
-        this.role = role;
+        this.offlinePlayer = player;
         this.joinDate = new Date();
+        this.role = ClanRole.MEMBER;
     }
 
-    protected ClanMember(@NotNull Clan clan, @NotNull ClanMemberConfigurationSection configuration) {
+    protected ClanMember(@NotNull Clan clan, @NotNull ClanMemberBuilder builder) {
         this.clan = clan;
-        this.player = configuration.getPlayer();
-        this.joinDate = configuration.getJoinDate();
-        this.role = configuration.getRole();
-        this.setKills(configuration.getKills());
+        this.offlinePlayer = builder.getOfflinePlayer();
+        this.joinDate = builder.getJoinDate();
+        this.role = builder.getRole();
+        this.setKills(builder.getKills());
     }
 
     public Clan getClan() {
         return this.clan;
     }
 
-    public OfflinePlayer getPlayer() {
-        return this.player;
-    }
-
-    public ClanRole getRole() {
-        return this.role;
+    public OfflinePlayer getOfflinePlayer() {
+        return this.offlinePlayer;
     }
 
     public Date getJoinDate() {
         return this.joinDate;
     }
 
-    public int getKills() {
-        return this.totalKills;
+    public ClanRole getRole() {
+        return this.role;
     }
 
-    public void setKills(int kills) {
-        this.totalKills = kills;
+    public int getKills() {
+        return this.totalKills;
     }
 
     public void setRole(@NotNull ClanRole role) {
@@ -68,55 +61,61 @@ public class ClanMember {
         this.role = role;
     }
 
+    public void setKills(int kills) {
+        this.totalKills = Math.min(0, kills);
+    }
+
+    @SuppressWarnings("ConstantConditions")
     public void promote() {
-        ClanRole[] roles = ClanRole.values();
-        this.role = roles[Math.min(this.role.priority + 1, roles.length)];
+        if (!this.role.isHighest()) {
+            this.setRole(this.role.next());
+        }
     }
 
+    @SuppressWarnings("ConstantConditions")
     public void demote() {
-        ClanRole[] roles = ClanRole.values();
-        this.role = roles[Math.max(this.role.priority - 1, roles.length)];
+        if (!this.role.isLowest()) {
+            this.setRole(this.role.previous());
+        }
     }
 
-    public void sendMessage(String... message) {
-        Player p = this.player.getPlayer();
+    public void sendMessage(String message) {
+        Player p = this.offlinePlayer.getPlayer();
         if (p != null) {
             p.sendMessage(message);
         }
 
     }
 
-    protected void leaveClan(boolean silent) {
-        PlayerConfiguration playerConfiguration = PlayerUtilities.getPlayerConfiguration(this.player);
-        playerConfiguration.setClan(null);
+    protected void leaveClan() {
 
-        try {
-            playerConfiguration.save();
-        } catch (IOException var4) {
-            var4.printStackTrace();
-        }
+    }
 
-        if (!silent) {
-            this.sendMessage("You have left " + this.clan.getName() + " clan.");
-        }
-
+    public boolean isOnline() {
+        return this.getOfflinePlayer().isOnline();
     }
 
     @Override
     public boolean equals(Object object) {
-        if (object instanceof ClanMember) {
-            return ((ClanMember)object).getPlayer() == this.player;
-        } else {
-            return false;
-        }
-    }
-
-    public ClanMemberConfigurationSection toConfiguration() {
-        return ClanMemberConfigurationSection.fromClanMember(this);
+        return object instanceof ClanMember && ((ClanMember)object).getOfflinePlayer().equals(this.getOfflinePlayer());
     }
 
     @Override
+    public int hashCode() {
+        int hash = this.getClan().hashCode();
+        hash = 31 * hash + this.getOfflinePlayer().getUniqueId().hashCode();
+        return hash;
+    }
+
+    @SuppressWarnings("StringBufferReplaceableByString")
+    @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "[" + "clan='" + this.clan.getName() + "'" + ", player=" + this.player.getUniqueId() + ", role=" + this.role + ']';
+        return new StringBuilder(this.getClass().getSimpleName())
+                .append("[player=")
+                .append(this.getOfflinePlayer().getUniqueId())
+                .append(", clan=")
+                .append(this.getClan().getName())
+                .append("]")
+                .toString();
     }
 }

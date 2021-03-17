@@ -1,41 +1,50 @@
 package me.ag.clans.types;
 
 import me.ag.clans.ClansPlugin;
-import me.ag.clans.configuration.PlayerConfiguration;
 import me.ag.clans.events.ClanInviteEvent;
-import me.ag.clans.util.PlayerUtilities;
 
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ClanInvitation {
     private final Clan clan;
-    private final OfflinePlayer invited;
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
+    private final OfflinePlayer reciever;
+    private final OfflinePlayer sender;
 
-    public ClanInvitation(@NotNull Clan from, @NotNull OfflinePlayer to) {
+    public ClanInvitation(@NotNull Clan from, @NotNull OfflinePlayer to, @Nullable OfflinePlayer sender) {
         this.clan = from;
-        this.invited = to;
+        this.reciever = to;
+        this.sender = sender;
     }
 
     public void send() {
-        ClanInviteEvent event = new ClanInviteEvent(this);
-        plugin.getPluginManager().callEvent(event);
-        if (!event.isCancelled()) {
-            PlayerConfiguration playerConfiguration = PlayerUtilities.getPlayerConfiguration(this.invited);
-            if (!playerConfiguration.isInvitedBy(this.clan)) {
-                playerConfiguration.addInvitation(this);
-            }
+        ClansPlugin plugin = ClansPlugin.getInstance();
+        if (plugin == null)
+            throw new RuntimeException("ClanZ plugin isn't enabled");
 
+        ClanInviteEvent event = new ClanInviteEvent(this);
+        Bukkit.getPluginManager().callEvent(event);
+        if (!event.isCancelled()) {
+            PlayerAdapter playerAdapter = plugin.getPlayerAdapter(this.getReciever());
+            playerAdapter.addInvitation(this);
         }
     }
 
+    @NotNull
     public Clan getClan() {
         return this.clan;
     }
 
-    public OfflinePlayer getInvited() {
-        return this.invited;
+    @NotNull
+    public OfflinePlayer getReciever() {
+        return this.reciever;
+    }
+
+    @Nullable
+    public OfflinePlayer getSender() {
+        return this.sender;
     }
 
     @Override
@@ -44,7 +53,7 @@ public class ClanInvitation {
             return false;
         } else {
             ClanInvitation obj = (ClanInvitation)object;
-            return this.clan.equals(obj.getClan()) && this.invited.equals(obj.getInvited());
+            return this.clan.equals(obj.getClan()) && this.reciever.equals(obj.getReciever());
         }
     }
 
