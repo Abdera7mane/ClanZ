@@ -1,12 +1,21 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.List;
+
+import me.ag.clans.ClansPlugin;
+import static me.ag.clans.commands.SenderRequirement.PLAYER_ONLY;
+import static me.ag.clans.commands.SenderRequirement.WITH_CLAN;
+
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class BroadcastCommand extends SubCommand {
-    public BroadcastCommand() {
-        super("broadcast");
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITH_CLAN})
+public final class BroadcastCommand extends ClanZSubCommand {
+    public BroadcastCommand(ClansPlugin owner) {
+        super("broadcast", owner);
     }
 
     @Override
@@ -15,12 +24,7 @@ public class BroadcastCommand extends SubCommand {
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return true;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

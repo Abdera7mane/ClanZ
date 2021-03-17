@@ -1,71 +1,83 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.List;
+
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.messages.Messages;
-import me.ag.clans.messages.formatter.ClanFormatter;
 import me.ag.clans.messages.formatter.Formatter;
 import me.ag.clans.messages.formatter.PlayerFormatter;
 import me.ag.clans.types.Clan;
-import me.ag.clans.util.ClanUtilities;
-import me.ag.clans.util.PlayerUtilities;
+import static me.ag.clans.commands.SenderRequirement.PLAYER_ONLY;
+import static me.ag.clans.commands.SenderRequirement.WITHOUT_CLAN;
 
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class JoinCommand extends SubCommand {
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITHOUT_CLAN})
+public final class JoinCommand extends ClanZSubCommand {
 
-    public JoinCommand() {
-        super("join");
+    public JoinCommand(ClansPlugin owner) {
+        super("join", owner);
+        setPermission("clanz.join");
     }
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        Player player = (Player) sender;
-        Messages messages = plugin.getMessages();
+        
+        final Player player = (Player) sender;
+        final Formatter playerFormatter = new PlayerFormatter(player);
 
-        if (PlayerUtilities.hasClan(player)) {
-            Clan clan = PlayerUtilities.getPlayerClan(player);
-            String message = messages.getErrorMessage(Messages.Errors.ALREADY_HAVE_CLAN, new PlayerFormatter(player), new ClanFormatter(clan));
-            player.sendMessage(message);
+        Clan currentClan = this.getPlugin().getPlayerClan(player);
+        if (currentClan != null) {
+            this.getMessages().sendMessage(
+                    Messages.Errors.ALREADY_HAVE_CLAN,
+                    player,
+                    playerFormatter, currentClan
+            );
             return true;
         }
+
         else if (args.length < 2) {
-              sender.sendMessage("supply a clan");
-              return true;
+            return false;
         }
+
         String clanName = args[1];
-        Clan clan = ClanUtilities.getClan(clanName);
+        Clan clan = this.getPlugin().getClan(clanName);
         if (clan != null) {
-            Formatter[] formatters = {new PlayerFormatter(player), new ClanFormatter(clan)};
-            String message;
+            Messages.MessageKey message = null;
             switch (clan.getStatus()) {
                 case PUBLIC:
-                    clan.addMember(player, false);
+                    clan.addMember(player);
                     break;
                 case INVITE_ONLY:
-                    message = messages.getMessage(Messages.Global.INVITATION_SENT, formatters);
-                    sender.sendMessage(message);
+                    message = Messages.Globals.INVITATION_SENT;
                     break;
                 case CLOSED:
-                    message = messages.getMessage(Messages.Global.CLAN_CLOSED, formatters);
-                    sender.sendMessage(message);
+                    message = Messages.Globals.CLAN_CLOSED;
                     break;
             }
+            if (message != null)
+                this.getMessages().sendMessage(
+                        message,
+                        player,
+                        playerFormatter, clan
+                );
             return true;
+
         }
+        else {
+            this.getMessages().sendMessage(Messages.Errors.CLAN_NOT_FOUND, player, playerFormatter);
+        }
+
         return false;
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return true;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return false;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

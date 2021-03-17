@@ -1,81 +1,88 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.List;
+
 import me.ag.clans.ClansPlugin;
-import me.ag.clans.messages.Messages;
-import me.ag.clans.messages.formatter.ClanFormatter;
+import static me.ag.clans.commands.SenderRequirement.*;
+import static me.ag.clans.messages.Messages.Globals.*;
+import static me.ag.clans.messages.Messages.Errors.*;
+import me.ag.clans.messages.formatter.Formatter;
 import me.ag.clans.messages.formatter.PlayerFormatter;
 import me.ag.clans.types.Clan;
 import me.ag.clans.util.ClanUtilities;
-import me.ag.clans.util.InvalidClanNameException;
-import me.ag.clans.util.PlayerUtilities;
 
-import org.apache.commons.lang.ArrayUtils;
-
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class CreateCommand extends SubCommand {
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITHOUT_CLAN})
+public final class CreateCommand extends ClanZSubCommand {
 
-    public CreateCommand() {
-        super("create");
+    public CreateCommand(ClansPlugin owner) {
+        super("create", owner);
+        setPermission("clanz.create");
     }
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
         final Player player = (Player) sender;
-        final Messages messages = plugin.getMessages();
+        final Formatter playerFormmater = new PlayerFormatter(player);
 
-        if (PlayerUtilities.hasClan(player)) {
-            Clan clan = PlayerUtilities.getPlayerClan(player);
-            String message = messages.getErrorMessage(Messages.Errors.ALREADY_HAVE_CLAN, new PlayerFormatter(player), new ClanFormatter(clan));
-            player.sendMessage(message);
+        if (this.getPlugin().PlayerHasClan(player)) {
+            Clan clan = this.getPlugin().getPlayerClan(player);
+            this.getMessages().sendMessage(
+                    ALREADY_HAVE_CLAN,
+                    player,
+                    new PlayerFormatter(player), clan
+            );
             return true;
         }
 
         if (args.length > 1) {
             String clanName = args[1];
             if (!ClanUtilities.isValidClanName(clanName)) {
-                String message = messages.getErrorMessage(Messages.Errors.INVALID_CLAN_NAME, new PlayerFormatter(player));
-                player.sendMessage(message);
+                this.getMessages().sendMessage(
+                        INVALID_CLAN_NAME,
+                        player,
+                        new PlayerFormatter(player)
+                );
             }
 
             else if (args.length > 2) {
-                player.sendMessage("You can't have spaces in clan name");
-                String fullName = String.join("_", (String[]) ArrayUtils.subarray(args, 1, args.length)) ;
-                player.sendMessage("TIP!: try with " + fullName );
+                this.getMessages().sendMessage(
+                        NO_SPACES_IN_CLAN_NAME,
+                        player,
+                        playerFormmater
+                );
             }
-            else if (ClanUtilities.clanExist(clanName)) {
-                Clan clan = ClanUtilities.getClan(clanName);
-                String message = messages.getErrorMessage(Messages.Errors.CLAN_EXISTS, new PlayerFormatter(player), new ClanFormatter(clan));
-                player.sendMessage(message);
+            else if (this.getPlugin().clanExists(clanName)) {
+                Clan clan = this.getPlugin().getClan(clanName);
+                this.getMessages().sendMessage(
+                        CLAN_EXISTS,
+                        player,
+                        playerFormmater, clan
+                );
             }
 
-            else {
-                try {
-                    boolean success = ClanUtilities.createClan(clanName, player);
-                    if (success) {
-                        Clan createdClan = ClanUtilities.getClan(clanName);
-                        String message = messages.getMessage(Messages.Global.CLAN_CREATED, new PlayerFormatter(player), new ClanFormatter(createdClan));
-                        player.sendMessage(message);
-                    }
-                } catch (InvalidClanNameException ignored) {}
-                return true;
+            Clan createdClan = this.getPlugin().createClan(clanName, player);
+            if (createdClan != null) {
+                this.getMessages().sendMessage(
+                        CLAN_CREATED,
+                        player,
+                        playerFormmater, createdClan
+                );
             }
+            return true;
         }
 
         return false;
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return true;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

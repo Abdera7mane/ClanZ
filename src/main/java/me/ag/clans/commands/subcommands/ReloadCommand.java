@@ -1,24 +1,29 @@
 package me.ag.clans.commands.subcommands;
 
-import me.ag.clans.ClansPlugin;
-import org.bukkit.command.CommandSender;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import me.ag.clans.ClansPlugin;
+import me.ag.clans.util.LoadResult;
+
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class ReloadCommand extends SubCommand{
+public final class ReloadCommand extends ClanZSubCommand{
 
-    public ReloadCommand() {
-        super("reload", new ArrayList<>(Arrays.asList("rl")));
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
+    public ReloadCommand(ClansPlugin owner) {
+        super("reload", owner, new ArrayList<>(Arrays.asList("rl")));
     }
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        ClansPlugin plugin = ClansPlugin.getInstance();
-        boolean success = plugin.loadConfig();
-        if (success) {
+        LoadResult result = this.getPlugin().loadConfigs();
+        if (result.succeeded()) {
             sender.sendMessage("§2configuration reloaded !");
         }
         else {
@@ -28,12 +33,7 @@ public class ReloadCommand extends SubCommand{
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return false;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return false;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

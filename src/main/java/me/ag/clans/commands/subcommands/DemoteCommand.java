@@ -1,26 +1,62 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.List;
+
+import me.ag.clans.ClansPlugin;
+import me.ag.clans.messages.Messages;
+import me.ag.clans.messages.formatter.Formatter;
+import me.ag.clans.messages.formatter.PlayerFormatter;
+import me.ag.clans.types.Clan;
+import me.ag.clans.types.ClanMember;
+import me.ag.clans.types.ClanRole;
+import static me.ag.clans.commands.SenderRequirement.PLAYER_ONLY;
+import static me.ag.clans.commands.SenderRequirement.WITH_CLAN;
+
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class DemoteCommand extends SubCommand {
-    public DemoteCommand() {
-        super("demote");
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITH_CLAN})
+public final class DemoteCommand extends ClanZSubCommand {
+
+    public DemoteCommand(ClansPlugin owner) {
+        super("demote", owner);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        return false;
-    }
+        final Player player = (Player) sender;
+        final Clan clan = this.getPlugin().getPlayerClan(player);
+        final ClanRole role = clan.getMember(player).getRole();
 
-    @Override
-    public boolean isPlayerCommand() {
+        final Formatter[] formatters = {new PlayerFormatter(player), clan};
+
+        if (role.compareTo(ClanRole.CAPTAIN) < 0) {
+            this.getMessages().sendMessage(
+                    Messages.Errors.NO_CLAN_PERMISSION,
+                    player,
+                    formatters
+            );
+        }
+        else if (args.length > 1) {
+            OfflinePlayer target = clan.getOfflinePlayer(args[0]);
+            if (target != null) {
+                ClanMember targetMember = clan.getMember(target);
+                if (role.compareTo(targetMember.getRole()) > 0){
+                    targetMember.demote();
+                }
+            }
+        }
         return true;
     }
 
     @Override
-    public boolean clanRequired() {
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

@@ -1,12 +1,21 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.List;
+
+import me.ag.clans.ClansPlugin;
+import static me.ag.clans.commands.SenderRequirement.PLAYER_ONLY;
+import static me.ag.clans.commands.SenderRequirement.WITH_CLAN;
+
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class KickCommand extends SubCommand {
-    public KickCommand() {
-        super("kick");
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITH_CLAN})
+public final class KickCommand extends ClanZSubCommand {
+    public KickCommand(ClansPlugin owner) {
+        super("kick", owner);
     }
 
     @Override
@@ -15,11 +24,7 @@ public class KickCommand extends SubCommand {
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return true;
-    }
-
-    public boolean clanRequired() {
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

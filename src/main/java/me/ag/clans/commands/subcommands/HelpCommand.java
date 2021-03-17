@@ -1,42 +1,39 @@
 package me.ag.clans.commands.subcommands;
 
+import java.util.Collection;
+import java.util.List;
+
 import me.ag.clans.ClansPlugin;
 import me.ag.clans.commands.ClanCommand;
-import me.ag.clans.messages.Messages;
+
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class HelpCommand extends SubCommand {
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
+public final class HelpCommand extends ClanZSubCommand {
+    private final ClanCommand command;
 
-    public HelpCommand() {
-        super("help");
+    public HelpCommand(ClansPlugin owner, ClanCommand command) {
+        super("help", owner);
+        setPermission("clanz.help");
+        this.command = command;
     }
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        Messages messages = plugin.getMessages();
-        ClanCommand command = plugin.getMainCommand();
 
-        Set<SubCommand> commands = new HashSet<>(command.getAllCommands().values());
+        Collection<SubCommand> commands = command.getSubCommands();
         for (SubCommand subCommand :  commands) {
-            sender.sendMessage(messages.getHelpFormat(subCommand));
+            sender.sendMessage(this.getMessages().getHelpFormat(subCommand));
         }
 
         return true;
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return false;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return false;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

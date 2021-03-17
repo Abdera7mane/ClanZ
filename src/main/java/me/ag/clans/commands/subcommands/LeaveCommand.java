@@ -1,41 +1,29 @@
 package me.ag.clans.commands.subcommands;
 
-import me.ag.clans.types.Clan;
-import me.ag.clans.types.ClanRole;
-import me.ag.clans.util.PlayerUtilities;
+import me.ag.clans.ClansPlugin;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class LeaveCommand extends SubCommand {
-    public LeaveCommand() {
-        super("leave");
+import java.util.List;
+
+import static me.ag.clans.commands.SenderRequirement.PLAYER_ONLY;
+import static me.ag.clans.commands.SenderRequirement.WITH_CLAN;
+
+@SubCommandOptions(requirements = {PLAYER_ONLY, WITH_CLAN})
+public final class LeaveCommand extends ClanZSubCommand {
+    public LeaveCommand(ClansPlugin owner) {
+        super("leave", owner);
     }
 
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        Player player = (Player) sender;
-
-        Clan clan = PlayerUtilities.getPlayerClan(player);
-        ClanRole role = clan.getMember(player).getRole();
-        if (role != ClanRole.CAPTAIN) {
-            clan.removeMember(player, Clan.LeaveReason.QUIT);
-        }
-        else {
-            player.sendMessage("you can't leave the clan since you are the leader!");
-        }
-
         return false;
     }
 
     @Override
-    public boolean isPlayerCommand() {
-        return true;
-    }
-
-    @Override
-    public boolean clanRequired() {
-        return true;
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+        return null;
     }
 }

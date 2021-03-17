@@ -1,119 +1,136 @@
 package me.ag.clans.commands;
 
 import me.ag.clans.ClansPlugin;
-import me.ag.clans.commands.subcommands.BroadcastCommand;
-import me.ag.clans.commands.subcommands.ChatCommand;
-import me.ag.clans.commands.subcommands.CreateCommand;
-import me.ag.clans.commands.subcommands.DeleteCommand;
-import me.ag.clans.commands.subcommands.DemoteCommand;
-import me.ag.clans.commands.subcommands.HelpCommand;
-import me.ag.clans.commands.subcommands.JoinCommand;
-import me.ag.clans.commands.subcommands.KickCommand;
-import me.ag.clans.commands.subcommands.LeaveCommand;
-import me.ag.clans.commands.subcommands.PromoteCommand;
-import me.ag.clans.commands.subcommands.ReloadCommand;
-import me.ag.clans.commands.subcommands.SubCommand;
+import me.ag.clans.commands.subcommands.*;
 import me.ag.clans.messages.Messages;
 import me.ag.clans.messages.formatter.CommandFormatter;
-import me.ag.clans.messages.formatter.PlayerFormatter;
-import me.ag.clans.util.PlayerUtilities;
+import me.ag.clans.messages.formatter.CommandSenderFormatter;
 
+import me.ag.clans.messages.formatter.Formatter;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ClanCommand extends Command implements TabCompleter {
-    private static final ClansPlugin plugin = ClansPlugin.getInstance();
-    private final Map<String, SubCommand> subCommandMap = new LinkedHashMap<>();
+public final class ClanCommand implements CommandExecutor, TabCompleter, Listener {
+    private final ClansPlugin plugin;
+    private final Map<String, SubCommand> subCommandsMap = new TreeMap<>();
+    private final Map<SubCommand, SenderRequirement[]> execRequirementMap = new HashMap<>();
+    private SubCommand helpCommand;
 
+    public ClanCommand(ClansPlugin plugin) {
+        this.plugin = plugin;
 
-    public ClanCommand() {
-        super("clan");
-        setDescription("The main Clans command");
-        List<String> aliases = new ArrayList<>();
-        aliases.add("clans");
-        setAliases(aliases);
+        this.registerSubCommand(new BroadcastCommand(plugin));
+        this.registerSubCommand(new ChatCommand(plugin));
+        this.registerSubCommand(new CreateCommand(plugin));
+        this.registerSubCommand(new DeleteCommand(plugin));
+        this.registerSubCommand(new DemoteCommand(plugin));
+        this.registerSubCommand(new HelpCommand(plugin, this));
+        this.registerSubCommand(new JoinCommand(plugin));
+        this.registerSubCommand(new KickCommand(plugin));
+        this.registerSubCommand(new LeaveCommand(plugin));
+        this.registerSubCommand(new PromoteCommand(plugin));
+        this.registerSubCommand(new ReloadCommand(plugin));
 
-        registerSubCommand(new BroadcastCommand());
-        registerSubCommand(new ChatCommand());
-        registerSubCommand(new CreateCommand());
-        registerSubCommand(new DeleteCommand());
-        registerSubCommand(new DemoteCommand());
-        registerSubCommand(new HelpCommand());
-        registerSubCommand(new JoinCommand());
-        registerSubCommand(new KickCommand());
-        registerSubCommand(new LeaveCommand());
-        registerSubCommand(new PromoteCommand());
-        registerSubCommand(new ReloadCommand());
+        this.setHelpCommand(this.getSubCommand("help"));
+
+        this.plugin.getServer().getPluginManager().registerEvents(this, this.plugin);
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public boolean registerSubCommand(@NotNull SubCommand command) {
-        String label = command.getLabel().toLowerCase();
-        if (!subCommandMap.containsKey(label)) {
-            subCommandMap.put(label, command);
-            registerSubCommand(command.getAliases(), command);
-            return true;
+        boolean success = false;
+        String label = command.getLabel();
+        if (!isSubCommandRegistered(label)) {
+            this.subCommandsMap.put(label, command);
+            this.execRequirementMap.put(command, getRequirements(command.getClass()));
+            for (String alias : command.getAliases()) {
+                alias = alias.toLowerCase();
+                // Prevent aliases collision
+                if (!this.subCommandsMap.containsKey(alias)) {
+                    this.subCommandsMap.put(alias, command);
+                }
+            }
+            success = true;
         }
-        return false;
+        return success;
     }
 
-    public void registerSubCommand(@NotNull List<String> aliases, @NotNull SubCommand command) {
-        for (String alias : aliases) {
-            alias = alias.toLowerCase();
-            if (!subCommandMap.containsKey(alias)) {
-                subCommandMap.put(alias, command);
-            }
+
+    public boolean isSubCommandRegistered(@NotNull String commandName) {
+        return this.subCommandsMap.containsKey(commandName);
+    }
+
+    public void unregisterSubCommand(@NotNull SubCommand command) {
+        this.subCommandsMap.remove(command.getLabel());
+        for (String alias: command.getAliases()) {
+            // Since not all subcommands aliases could be registed
+            // We must remove the alias only if it was mapped to the approperiate subcommand
+            this.subCommandsMap.remove(alias, command);
         }
     }
 
     @Nullable
-    public SubCommand getCommand(@NotNull String name) {
-        return this.subCommandMap.get(name);
+    public SubCommand getSubCommand(@NotNull String name) {
+        return this.subCommandsMap.get(name);
     }
 
-    public Map<String, SubCommand> getAllCommands() {
-        return this.subCommandMap;
+    @NotNull
+    public Set<SubCommand> getSubCommands() {
+        return new TreeSet<>((this.subCommandsMap.values()));
     }
 
+    @Nullable
+    public SubCommand getHelpCommand() {
+        return this.helpCommand;
+    }
+
+    public void setHelpCommand(@Nullable SubCommand helpCommand) {
+        this.helpCommand = helpCommand;
+    }
+
+    @SuppressWarnings("ConstantConditions")
     @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
-        Messages messages = plugin.getMessages();
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        final Messages messages = this.plugin.getMessages();
+        Formatter senderFormatter = new CommandSenderFormatter(sender);
+
+        if (!this.checkPermission(sender)) {
+            messages.sendMessage(Messages.Errors.NO_PERMISSION, sender, senderFormatter);
+            return true;
+        }
+
         if (args.length == 0) {
-            this.subCommandMap.get("help").execute(sender, commandLabel, args);
+            SubCommand helpCommand = this.getHelpCommand();
+            if (helpCommand != null) {
+                helpCommand.execute(sender, label, args);
+            }
             return true;
         }
 
         String arg0 = args[0].toLowerCase();
-        if (subCommandMap.containsKey(arg0)) {
-            SubCommand subCommand = subCommandMap.get(arg0);
-            if (subCommand.isPlayerCommand() && sender instanceof ConsoleCommandSender) {
-                sender.sendMessage("§cthis is a player only command");
+        if (this.isSubCommandRegistered(arg0)) {
+            SubCommand subCommand = this.getSubCommand(arg0);
+            if (!this.checkPermission(sender, subCommand)) {
                 return true;
             }
-            else if (subCommand.clanRequired() && sender instanceof Player) {
-                Player player = (Player) sender;
-                if (!PlayerUtilities.hasClan(player)) {
-                    String message = messages.getErrorMessage(
-                            Messages.Errors.PLAYER_ONLY_COMMAND,
-                            new PlayerFormatter(player),
-                            new CommandFormatter(subCommand));
-                    player.sendMessage(message);
-                    return true;
-                }
-            }
 
-            boolean success = subCommand.execute(sender, commandLabel, args);
-            if (!success) sender.sendMessage(subCommand.getUsage());
+            boolean success = subCommand.execute(sender, label, args);
+            if (!success) {
+                sender.sendMessage("§4§lError§4 at argument§c " + args.length);
+                sender.sendMessage("§eUsage§r " + subCommand.getUsage());
+
+            }
         } else {
             sender.sendMessage("§c" + arg0 + " Command not found, please type:§r /clan help");
         }
@@ -123,17 +140,48 @@ public class ClanCommand extends Command implements TabCompleter {
     @Nullable
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        if (command.equals(this) && args.length <= 1) {
-            List<String> list = new ArrayList<>();
-            for (String argument : subCommandMap.keySet()) {
-                String arg0 = args.length > 0 ? args[0] : "";
-                if (argument.startsWith(arg0)) {
-                    list.add(argument);
-                }
-            }
-            return list;
+        String arg0 = args.length > 0 ? args[0].toLowerCase() : "";
+        if (this.isSubCommandRegistered(arg0) && args.length > 1) {
+            return this.subCommandsMap.get(arg0).onTabComplete(sender, command, alias, args);
         }
 
-        return null;
+        return this.subCommandsMap.keySet().stream()
+                   .filter(commandName -> commandName.startsWith(arg0))
+                   .collect(Collectors.toList());
     }
+
+    public boolean checkPermission(@NotNull CommandSender target) {
+        final String permission = this.plugin.getMainCommand().getPermission();
+        return permission != null && target.hasPermission(permission);
+    }
+
+    public boolean checkPermission(@NotNull CommandSender target, @NotNull SubCommand command) {
+        boolean check = true;
+        for (SenderRequirement requirement : this.execRequirementMap.get(command)) {
+            if (!requirement.match(target)) {
+                check = false;
+                requirement.sendErrorMessage(
+                        target,
+                        new CommandSenderFormatter(target),
+                        new CommandFormatter(command)
+                );
+                break;
+            }
+        }
+        return check;
+    }
+
+    private SenderRequirement[] getRequirements(@NotNull Class<? extends SubCommand> clazz) {
+        SubCommandOptions annotation = clazz.getAnnotation(SubCommandOptions.class);
+        return annotation.requirements();
+    }
+    
+    @EventHandler
+    private void onPluginDisabled(PluginDisableEvent event) {
+        for (SubCommand command : this.getSubCommands()) {
+            if (command.getOwner().equals(event.getPlugin()))
+                this.unregisterSubCommand(command);
+        }
+    }
+    
 }
