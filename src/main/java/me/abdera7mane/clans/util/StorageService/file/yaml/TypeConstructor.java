@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 
 import me.abdera7mane.clans.types.*;
 import me.abdera7mane.clans.ClansPlugin;
-import me.ag.clans.types.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
